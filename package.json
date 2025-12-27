@@ -1,0 +1,40 @@
+{
+  "name": "dms-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Enterprise Dealership Management System",
+  "workspaces": [
+    "packages/*",
+    "services/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "turbo run dev",
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md}\"",
+    "type-check": "turbo run type-check",
+    "clean": "turbo run clean && rm -rf node_modules",
+    "docker:dev": "docker-compose up -d",
+    "docker:prod": "docker-compose -f docker-compose.prod.yml up -d",
+    "docker:down": "docker-compose down",
+    "db:migrate": "cd packages/database && npm run migrate",
+    "db:seed": "cd packages/database && npm run seed",
+    "db:studio": "cd packages/database && npm run studio",
+    "api:dev": "npm run dev --workspace=@dms/api",
+    "web:dev": "npm run dev --workspace=@dms/web"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.6",
+    "turbo": "^1.11.3",
+    "prettier": "^3.1.1",
+    "eslint": "^8.56.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0",
+    "npm": ">=9.0.0"
+  },
+  "packageManager": "npm@10.2.5"
+}

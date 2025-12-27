@@ -1,0 +1,256 @@
+// Base schema configuration
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// CORE MODELS
+// ============================================================================
+
+/// Organization (Dealership/Shop)
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  slug      String   @unique
+  type      String   // 'dealership' | 'service_shop' | 'parts_store'
+  
+  // Contact info
+  email     String?
+  phone     String?
+  website   String?
+  
+  // Address
+  address1  String?
+  address2  String?
+  city      String?
+  state     String?
+  zip       String?
+  country   String   @default("US")
+  
+  // Business info
+  taxId     String?
+  
+  // Subscription
+  plan      String   @default("basic") // 'basic' | 'professional' | 'enterprise'
+  status    String   @default("active") // 'active' | 'suspended' | 'cancelled'
+  
+  // Settings
+  settings  Json?
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  
+  // Relations
+  locations    Location[]
+  users        User[]
+  customers    Customer[]
+  vehicles     Vehicle[]
+  appointments Appointment[]
+  workOrders   WorkOrder[]
+  parts        Part[]
+  vendors      Vendor[]
+  
+  @@map("organizations")
+}
+
+/// Location (for multi-location organizations)
+model Location {
+  id             String   @id @default(uuid())
+  organizationId String
+  
+  name           String
+  code           String?  // Location code (e.g., "LOC-001")
+  
+  // Contact
+  email          String?
+  phone          String?
+  
+  // Address
+  address1       String?
+  address2       String?
+  city           String?
+  state          String?
+  zip            String?
+  
+  // Operations
+  timezone       String   @default("America/New_York")
+  
+  // Hours (JSON)
+  businessHours  Json?
+  
+  // Metadata
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  users          User[]
+  appointments   Appointment[]
+  workOrders     WorkOrder[]
+  
+  @@map("locations")
+  @@index([organizationId])
+}
+
+/// User (Staff/Employees)
+model User {
+  id             String   @id @default(uuid())
+  organizationId String
+  locationId     String?
+  
+  // Auth
+  username       String   @unique
+  email          String   @unique
+  password       String   // bcrypt hashed
+  
+  // Profile
+  firstName      String
+  lastName       String
+  phone          String?
+  avatar         String?
+  
+  // Role
+  role           String   // 'admin' | 'manager' | 'service_advisor' | 'technician' | 'parts_manager' | 'salesperson'
+  
+  // Permissions (JSON array)
+  permissions    Json?
+  
+  // Status
+  isActive       Boolean  @default(true)
+  emailVerified  Boolean  @default(false)
+  
+  // Metadata
+  lastLoginAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location       Location?    @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  sessions       Session[]
+  refreshTokens  RefreshToken[]
+  createdAppointments Appointment[] @relation("CreatedByUser")
+  assignedAppointments Appointment[] @relation("AssignedToTech")
+  createdWorkOrders WorkOrder[] @relation("CreatedByUser")
+  assignedWorkOrders WorkOrder[] @relation("AssignedToTech")
+  
+  @@map("users")
+  @@index([organizationId])
+  @@index([locationId])
+  @@index([email])
+}
+
+/// Session (for JWT tracking)
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  
+  token     String   @unique
+  expiresAt DateTime
+  
+  // Metadata
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("sessions")
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Refresh Token
+model RefreshToken {
+  id        String   @id @default(uuid())
+  userId    String
+  
+  token     String   @unique
+  expiresAt DateTime
+  isRevoked Boolean  @default(false)
+  
+  // Metadata
+  createdAt DateTime @default(now())
+  
+  // Relations
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@map("refresh_tokens")
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+/// Permission (for RBAC)
+model Permission {
+  id          String @id @default(uuid())
+  
+  name        String @unique
+  description String?
+  resource    String // 'users' | 'customers' | 'appointments' | etc.
+  action      String // 'create' | 'read' | 'update' | 'delete'
+  
+  // Metadata
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  roles       RolePermission[]
+  
+  @@map("permissions")
+  @@unique([resource, action])
+}
+
+/// Role
+model Role {
+  id          String @id @default(uuid())
+  
+  name        String @unique
+  description String?
+  
+  // Metadata
+  isSystem    Boolean @default(false) // System roles can't be deleted
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  
+  // Relations
+  permissions RolePermission[]
+  
+  @@map("roles")
+}
+
+/// Role-Permission junction table
+model RolePermission {
+  id           String @id @default(uuid())
+  roleId       String
+  permissionId String
+  
+  // Relations
+  role         Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission   Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+  
+  @@map("role_permissions")
+  @@unique([roleId, permissionId])
+  @@index([roleId])
+  @@index([permissionId])
+}
+
+// ============================================================================
+// EXPORT NOTE:
+// This is just the base schema. Additional domain schemas will be imported:
+// - auth.prisma (authentication models - already included above)
+// - customers.prisma (customer & vehicle models)
+// - service.prisma (appointments, work orders, quotes)
+// - parts.prisma (inventory, vendors, purchase orders)
+// - sales.prisma (leads, deals, vehicle inventory)
+// - fi.prisma (F&I products, lenders)
+// - communications.prisma (messages, emails, SMS)
+// ============================================================================

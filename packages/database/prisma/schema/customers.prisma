@@ -1,0 +1,165 @@
+// ============================================================================
+// CUSTOMER DOMAIN MODELS
+// ============================================================================
+
+/// Customer
+model Customer {
+  id             String   @id @default(uuid())
+  organizationId String
+  
+  // Type
+  type           String   @default("individual") // 'individual' | 'business'
+  
+  // Personal info (for individuals)
+  firstName      String?
+  lastName       String?
+  
+  // Business info (for businesses)
+  companyName    String?
+  
+  // Contact info
+  email          String?
+  phone          String?
+  altPhone       String?
+  
+  // Address
+  address1       String?
+  address2       String?
+  city           String?
+  state          String?
+  zip            String?
+  
+  // Business info
+  taxId          String?
+  
+  // Preferences
+  preferredContactMethod String? // 'email' | 'phone' | 'sms'
+  language       String?  @default("en")
+  
+  // Marketing
+  marketingOptIn Boolean  @default(false)
+  tags           Json?    // Array of tags
+  
+  // Metadata
+  notes          String?  @db.Text
+  customFields   Json?
+  
+  // Stats
+  lifetimeValue  Decimal? @db.Decimal(10, 2)
+  totalVisits    Int      @default(0)
+  lastVisitAt    DateTime?
+  
+  // Status
+  isActive       Boolean  @default(true)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vehicles       Vehicle[]
+  appointments   Appointment[]
+  workOrders     WorkOrder[]
+  quotes         Quote[]
+  communications Communication[]
+  touchpoints    CustomerTouchpoint[]
+  
+  @@map("customers")
+  @@index([organizationId])
+  @@index([email])
+  @@index([phone])
+  @@index([lastName, firstName])
+}
+
+/// Vehicle (customer-owned vehicles)
+model Vehicle {
+  id             String   @id @default(uuid())
+  organizationId String
+  customerId     String
+  
+  // Vehicle identification
+  vin            String?  @unique
+  year           Int
+  make           String
+  model          String
+  trim           String?
+  
+  // Engine & transmission
+  engine         String?
+  transmission   String?
+  drivetrain     String?
+  
+  // Details
+  color          String?
+  mileage        Int?
+  licensePlate   String?
+  licenseState   String?
+  
+  // Ownership
+  purchaseDate   DateTime?
+  purchasePrice  Decimal?  @db.Decimal(10, 2)
+  
+  // Status
+  isActive       Boolean   @default(true)
+  
+  // Metadata
+  notes          String?   @db.Text
+  customFields   Json?
+  
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  appointments   Appointment[]
+  workOrders     WorkOrder[]
+  quotes         Quote[]
+  
+  @@map("vehicles")
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([vin])
+}
+
+/// Customer Touchpoint (automated customer journey tracking)
+model CustomerTouchpoint {
+  id         String   @id @default(uuid())
+  customerId String
+  
+  // Touchpoint details
+  type       String   // 'welcome' | 'service_reminder' | 'birthday' | 'review_request' | 'follow_up'
+  status     String   // 'pending' | 'sent' | 'delivered' | 'failed' | 'completed'
+  
+  // Scheduling
+  scheduledFor DateTime?
+  sentAt       DateTime?
+  
+  // Content
+  subject      String?
+  message      String?  @db.Text
+  
+  // Channel
+  channel      String?  // 'email' | 'sms' | 'phone'
+  
+  // Response tracking
+  opened       Boolean  @default(false)
+  openedAt     DateTime?
+  clicked      Boolean  @default(false)
+  clickedAt    DateTime?
+  responded    Boolean  @default(false)
+  respondedAt  DateTime?
+  
+  // Metadata
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  customer     Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  
+  @@map("customer_touchpoints")
+  @@index([customerId])
+  @@index([type])
+  @@index([status])
+  @@index([scheduledFor])
+}

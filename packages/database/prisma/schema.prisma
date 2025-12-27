@@ -1,0 +1,74 @@
+// ============================================================================
+// DMS PLATFORM - MAIN PRISMA SCHEMA
+// ============================================================================
+// This file imports all domain-specific schemas for better organization
+// Each domain (auth, customers, service, parts, sales) has its own schema file
+// ============================================================================
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../node_modules/.prisma/client"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// DOMAIN SCHEMAS
+// ============================================================================
+// Import all domain-specific schemas
+// Schemas are organized by business domain for better maintainability
+// ============================================================================
+
+// Core models: Organizations, Locations, Users, Auth, Permissions
+// Located in: schema/base.prisma
+// Models: Organization, Location, User, Session, RefreshToken, Permission, Role, RolePermission
+
+// Customer domain: Customers, Vehicles, Touchpoints
+// Located in: schema/customers.prisma  
+// Models: Customer, Vehicle, CustomerTouchpoint
+
+// Service domain: Appointments, Work Orders, Quotes
+// Located in: schema/service.prisma
+// Models: Appointment, WorkOrder, WorkOrderItem, Quote, QuoteItem
+
+// Parts domain: Inventory, Vendors, Purchase Orders
+// Located in: schema/parts.prisma
+// Models: Part, PartTransaction, Vendor, PurchaseOrder, PurchaseOrderItem
+
+// Sales & Communications domain: Leads, Deals, F&I, Communications
+// Located in: schema/sales.prisma
+// Models: Lead, VehicleInventory, Deal, FIProduct, Communication
+
+// ============================================================================
+// NOTES:
+// ============================================================================
+// - Run `npm run generate` to generate the Prisma Client
+// - Run `npm run migrate` to create/update database schema
+// - Run `npm run studio` to open Prisma Studio GUI
+// - All models use UUID for primary keys
+// - All models have createdAt/updatedAt timestamps
+// - Soft deletes can be added later if needed
+// - Indexes are added for frequently queried fields
+// ============================================================================
+
+// ============================================================================
+// ACTUAL MODELS (Copy from schema files)
+// ============================================================================
+// For now, Prisma doesn't support file imports, so we need to copy all models
+// into this single file. In the future, we can use a build step to combine them.
+// 
+// TODO: Set up a build script to automatically combine schema files
+// ============================================================================
+
+// COPY CONTENTS FROM:
+// - schema/base.prisma
+// - schema/customers.prisma  
+// - schema/service.prisma
+// - schema/parts.prisma
+// - schema/sales.prisma
+
+// For now, using modular schema files for development
+// Run the combine-schemas.ts script to generate this file

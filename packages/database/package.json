@@ -1,0 +1,27 @@
+{
+  "name": "@dms/database",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Database schema and migrations for DMS Platform",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "scripts": {
+    "generate": "prisma generate",
+    "migrate": "prisma migrate dev",
+    "migrate:deploy": "prisma migrate deploy",
+    "migrate:reset": "prisma migrate reset",
+    "studio": "prisma studio",
+    "seed": "ts-node prisma/seeds/index.ts",
+    "format": "prisma format",
+    "validate": "prisma validate"
+  },
+  "dependencies": {
+    "@prisma/client": "^5.7.1"
+  },
+  "devDependencies": {
+    "prisma": "^5.7.1",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6"
+  }
+}
