@@ -45,7 +45,7 @@ class InviteToken(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
 
@@ -78,7 +78,7 @@ class PasswordResetToken(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
 
@@ -91,7 +91,7 @@ class FeatureFlag(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
 
@@ -109,7 +109,7 @@ class TenantFeatureOverride(Base):
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
         onupdate=sa.func.now(),
     )
 
@@ -129,7 +129,7 @@ class RoleFeatureOverride(Base):
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
         onupdate=sa.func.now(),
     )
 
@@ -149,7 +149,7 @@ class UserFeatureOverride(Base):
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
         onupdate=sa.func.now(),
     )
 
@@ -175,11 +175,12 @@ class TenantProfile(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
         onupdate=sa.func.now(),
     )
+

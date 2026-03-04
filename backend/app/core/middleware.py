@@ -121,7 +121,10 @@ class IdempotencyRequirementMiddleware(BaseHTTPMiddleware):
 class RateLimitMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
-        self.enabled = (os.getenv("KUTM_RATE_LIMIT_ENABLED", "1").strip().lower() in {"1", "true", "yes", "on"})
+        app_env = (os.getenv("APP_ENV") or os.getenv("ENV") or "").strip().lower()
+        is_pytest = bool(os.getenv("PYTEST_CURRENT_TEST"))
+        default_enabled = "0" if app_env in {"test", "testing"} or is_pytest else "1"
+        self.enabled = (os.getenv("KUTM_RATE_LIMIT_ENABLED", default_enabled).strip().lower() in {"1", "true", "yes", "on"})
         self.limit = int(os.getenv("KUTM_RATE_LIMIT_PER_MIN", "60"))
         self.window_seconds = int(os.getenv("KUTM_RATE_LIMIT_WINDOW_SECONDS", "60"))
         self._hits: dict[str, deque[float]] = {}
@@ -147,6 +150,9 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         return any(path == prefix or path.startswith(prefix + "/") for prefix in self._paths)
 
     def _use_db_backend(self) -> bool:
+        app_env = (os.getenv("APP_ENV") or os.getenv("ENV") or "").strip().lower()
+        if (app_env in {"test", "testing"} or os.getenv("PYTEST_CURRENT_TEST")) and not os.getenv("KUTM_RATE_LIMIT_BACKEND"):
+            return False
         mode = (os.getenv("KUTM_RATE_LIMIT_BACKEND") or "auto").strip().lower()
         if mode in {"memory", "in_memory"}:
             return False

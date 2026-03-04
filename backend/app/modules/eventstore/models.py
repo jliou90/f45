@@ -39,7 +39,7 @@ class Stream(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
 
@@ -93,7 +93,7 @@ class Event(Base):
     recorded_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
     actor_id: Mapped[str | None] = mapped_column(
@@ -114,3 +114,4 @@ class Event(Base):
         nullable=False,
         server_default=sa.text("'{}'::jsonb"),
     )
+

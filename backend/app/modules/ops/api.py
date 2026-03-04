@@ -208,9 +208,11 @@ def health() -> dict[str, bool]:
 def version() -> dict[str, str | None]:
     info = build_info()
     return {
+        "service": info.get("service") or "kutm-backend",
         "product_name": "KUTM",
         "version": info.get("version"),
         "git_sha": info.get("git_sha"),
+        "build_time": info.get("build_time"),
     }
 
 

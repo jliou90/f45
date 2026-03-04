@@ -37,12 +37,12 @@ class WebhookSubscription(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
 
@@ -69,19 +69,19 @@ class OutboxMessage(Base):
     attempts: Mapped[int] = mapped_column(sa.Integer, nullable=False, server_default="0")
 
     next_attempt_at: Mapped[datetime] = mapped_column(
-        sa.DateTime(timezone=True), nullable=False, server_default=sa.text("now()")
+        sa.DateTime(timezone=True), nullable=False, server_default=sa.func.now()
     )
     last_error: Mapped[str | None] = mapped_column(sa.String(2000), nullable=True)
 
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
 
@@ -102,7 +102,7 @@ class IdempotencyKey(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
 
@@ -138,10 +138,11 @@ class IdempotencyRecord(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
+

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from app.core.auth.deps import get_current_user
+from app.core.idempotency import idempotency_guard
 from app.core.pagination import PageMeta
 from app.core.querying import Page, page_params
 from app.core.rbac import Permission, require_permission
@@ -97,7 +98,7 @@ def list_roles(page: Page = Depends(page_params), query: str | None = Query(defa
 @router.post(
     "/roles",
     response_model=RoleDetailOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_ROLES_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_ROLES_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def create_role(payload: RoleCreateIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -124,7 +125,7 @@ def get_role(role_id: str, db: Session = Depends(get_db), tenant_id: str = Depen
 @router.put(
     "/roles/{role_id}",
     response_model=RoleDetailOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_ROLES_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_ROLES_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def update_role(role_id: str, payload: RoleUpdateIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -146,7 +147,7 @@ def update_role(role_id: str, payload: RoleUpdateIn, request: Request, uow: Unit
 @router.delete(
     "/roles/{role_id}",
     response_model=RoleDeleteOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_ROLES_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_ROLES_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def delete_role(role_id: str, request: Request, force: bool = Query(default=False), uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -172,7 +173,7 @@ def list_users(page: Page = Depends(page_params), query: str | None = Query(defa
 @router.post(
     "/users",
     response_model=UserDetailOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def create_user(payload: UserCreateIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -200,7 +201,7 @@ def get_user(user_id: str, db: Session = Depends(get_db), tenant_id: str = Depen
 @router.put(
     "/users/{user_id}",
     response_model=UserDetailOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def update_user(user_id: str, payload: UserUpdateIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -222,7 +223,7 @@ def update_user(user_id: str, payload: UserUpdateIn, request: Request, uow: Unit
 @router.put(
     "/users/{user_id}/role",
     response_model=UserDetailOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def change_user_role(user_id: str, payload: UserRoleUpdateIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -242,7 +243,7 @@ def change_user_role(user_id: str, payload: UserRoleUpdateIn, request: Request, 
 @router.delete(
     "/users/{user_id}",
     response_model=UserDisableOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def disable_user(user_id: str, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -260,7 +261,7 @@ def disable_user(user_id: str, request: Request, uow: UnitOfWork = Depends(get_u
 @router.post(
     "/users/bulk",
     response_model=BulkUsersOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def bulk_users(payload: BulkUsersIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -280,7 +281,7 @@ def bulk_users(payload: BulkUsersIn, request: Request, uow: UnitOfWork = Depends
 @router.post(
     "/invites",
     response_model=InviteCreateOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def create_invite(payload: InviteCreateIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -309,7 +310,7 @@ def list_invites(page: Page = Depends(page_params), query: str | None = Query(de
 @router.delete(
     "/invites/{invite_id}",
     response_model=InviteRevokeOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def revoke_invite(invite_id: str, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -327,7 +328,7 @@ def revoke_invite(invite_id: str, request: Request, uow: UnitOfWork = Depends(ge
 @router.post(
     "/users/{user_id}/password-reset",
     response_model=PasswordResetCreateOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def create_password_reset(user_id: str, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -354,7 +355,7 @@ def list_user_sessions(user_id: str, page: Page = Depends(page_params), db: Sess
 @router.post(
     "/users/{user_id}/sessions/revoke",
     response_model=SessionRevokeOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def revoke_user_sessions(user_id: str, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -372,7 +373,7 @@ def revoke_user_sessions(user_id: str, request: Request, uow: UnitOfWork = Depen
 @router.post(
     "/sessions/revoke",
     response_model=SessionRevokeOut,
-    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.ADMIN_USERS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def revoke_session(request: Request, session_id: str = Query(...), uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -407,7 +408,7 @@ def feature_flags_overrides(db: Session = Depends(get_db), tenant_id: str = Depe
 @router.put(
     "/feature-flags/overrides/{flag_key}",
     response_model=FeatureOverrideDeleteOut,
-    dependencies=[Depends(require_permission(Permission.FEATUREFLAGS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.FEATUREFLAGS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def upsert_feature_flag_override(flag_key: str, payload: FeatureOverrideUpsertIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -429,7 +430,7 @@ def upsert_feature_flag_override(flag_key: str, payload: FeatureOverrideUpsertIn
 @router.delete(
     "/feature-flags/overrides/{flag_key}",
     response_model=FeatureOverrideDeleteOut,
-    dependencies=[Depends(require_permission(Permission.FEATUREFLAGS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.FEATUREFLAGS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def delete_feature_flag_override(request: Request, flag_key: str, scope: str = Query(...), role_id: str | None = Query(default=None), user_id: str | None = Query(default=None), uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -455,7 +456,7 @@ def tenant_profile(db: Session = Depends(get_db), tenant_id: str = Depends(get_t
 @router.put(
     "/tenant/profile",
     response_model=TenantProfileOut,
-    dependencies=[Depends(require_permission(Permission.TENANT_SETTINGS_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.TENANT_SETTINGS_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def update_tenant_profile(payload: TenantProfileUpdateIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -473,7 +474,7 @@ def update_tenant_profile(payload: TenantProfileUpdateIn, request: Request, uow:
 @router.put(
     "/tenant/logo-url",
     response_model=TenantProfileOut,
-    dependencies=[Depends(require_permission(Permission.THEME_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.THEME_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def set_logo_url(payload: TenantLogoIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:
@@ -497,7 +498,7 @@ def tenant_theme(db: Session = Depends(get_db), tenant_id: str = Depends(get_ten
 @router.put(
     "/tenant/theme",
     response_model=TenantThemeOut,
-    dependencies=[Depends(require_permission(Permission.THEME_WRITE)), Depends(_require_admin_writable)],
+    dependencies=[Depends(require_permission(Permission.THEME_WRITE)), Depends(_require_admin_writable), Depends(idempotency_guard)],
 )
 def update_tenant_theme(payload: TenantThemeUpdateIn, request: Request, uow: UnitOfWork = Depends(get_uow), tenant_id: str = Depends(get_tenant_id), current_user: User = Depends(get_current_user)):
     with uow as db:

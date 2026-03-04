@@ -30,12 +30,12 @@ class Role(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
         onupdate=sa.func.now(),
     )
 
@@ -64,3 +64,4 @@ class RolePermission(Base):
         sa.ForeignKey("permissions.key", ondelete="CASCADE"),
         primary_key=True,
     )
+

@@ -79,7 +79,10 @@ def create_app() -> FastAPI:
     # Trust hosts in prod (prevents Host header attacks).
     # In dev, keep permissive unless explicitly set.
     if (not is_dev) or os.getenv("TRUSTED_HOSTS"):
-        trusted_hosts = _env_csv("TRUSTED_HOSTS", ["localhost", "127.0.0.1"])
+        default_trusted_hosts = ["localhost", "127.0.0.1"]
+        if env is AppEnv.TEST:
+            default_trusted_hosts.append("testserver")
+        trusted_hosts = _env_csv("TRUSTED_HOSTS", default_trusted_hosts)
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=trusted_hosts)
 
     # Audit log (best-effort)

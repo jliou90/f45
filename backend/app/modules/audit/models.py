@@ -43,7 +43,7 @@ class AuditLog(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
 
 
@@ -82,3 +82,4 @@ class AuditEvent(Base):
     metadata_json: Mapped[dict] = mapped_column("metadata", sa.JSON(), nullable=False, server_default=sa.text("'{}'"))
     before: Mapped[dict | None] = mapped_column(sa.JSON(), nullable=True)
     after: Mapped[dict | None] = mapped_column(sa.JSON(), nullable=True)
+

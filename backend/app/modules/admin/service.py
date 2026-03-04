@@ -54,6 +54,14 @@ def _utcnow() -> datetime:
     return datetime.now(UTC)
 
 
+def _as_utc(value: datetime | None) -> datetime | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        return value.replace(tzinfo=UTC)
+    return value.astimezone(UTC)
+
+
 def _token_hash(token: str) -> str:
     return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
@@ -679,7 +687,7 @@ def list_invites(db: Session, *, tenant_id: str, query: str | None = None) -> li
             status = "revoked"
         elif invite.accepted_at:
             status = "accepted"
-        elif invite.expires_at <= now:
+        elif (_as_utc(invite.expires_at) or now) <= now:
             status = "expired"
         items.append(
             {
@@ -737,7 +745,7 @@ def accept_invite(
 ) -> dict:
     now = _utcnow()
     invite = db.query(InviteToken).filter(InviteToken.token_hash == _token_hash(token)).one_or_none()
-    if invite is None or invite.revoked_at or invite.accepted_at or invite.expires_at <= now:
+    if invite is None or invite.revoked_at or invite.accepted_at or (_as_utc(invite.expires_at) or now) <= now:
         raise AppError(code="invite_invalid", message="Invite token is invalid or expired", status_code=400)
     role = db.query(Role).filter(Role.id == invite.role_id, Role.tenant_id == invite.tenant_id).one_or_none()
     if role is None:
@@ -836,7 +844,7 @@ def consume_password_reset(
 ) -> dict:
     now = _utcnow()
     reset = db.query(PasswordResetToken).filter(PasswordResetToken.token_hash == _token_hash(token)).one_or_none()
-    if reset is None or reset.consumed_at or reset.expires_at <= now:
+    if reset is None or reset.consumed_at or (_as_utc(reset.expires_at) or now) <= now:
         raise AppError(code="password_reset_invalid", message="Password reset token is invalid or expired", status_code=400)
     user = db.get(User, reset.user_id)
     if user is None:
@@ -878,7 +886,7 @@ def list_user_sessions(db: Session, *, tenant_id: str, user_id: str) -> list[dic
             "revoked_reason": row.revoked_reason,
             "user_agent_hash": row.user_agent_hash,
             "ip_hash": row.ip_hash,
-            "is_active": row.revoked_at is None and row.expires_at > _utcnow(),
+            "is_active": row.revoked_at is None and (_as_utc(row.expires_at) or _utcnow()) > _utcnow(),
         }
         for row in rows
     ]

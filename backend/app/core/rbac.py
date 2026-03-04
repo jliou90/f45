@@ -117,9 +117,11 @@ def _membership_permissions(
 ) -> set[str]:
     membership = db.get(Membership, {"tenant_id": tenant_id, "user_id": user_id})
     if membership is None:
-        return set()
+        role_name = normalize_role(fallback_role)
+        return {perm.value for perm in permissions_for_role(role_name)}
 
     granted: set[str] = set()
+    role_name = normalize_role(getattr(membership, "role", None) or fallback_role)
     if membership.role_id:
         rows = (
             db.query(RolePermission.permission_key)
@@ -128,10 +130,12 @@ def _membership_permissions(
         )
         granted.update(row[0] for row in rows)
 
+    if role_name == "ADMIN":
+        granted.update(perm.value for perm in permissions_for_role(role_name))
+
     if granted:
         return granted
 
-    role_name = normalize_role(getattr(membership, "role", None) or fallback_role)
     return {perm.value for perm in permissions_for_role(role_name)}
 
 

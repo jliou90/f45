@@ -29,7 +29,7 @@ class Document(Base):
     updated_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
     document: Mapped[dict] = mapped_column(JSONB, nullable=False)
 
@@ -55,7 +55,7 @@ class DocumentAttachment(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
     created_by: Mapped[str | None] = mapped_column(
         sa.String(36),
@@ -95,10 +95,11 @@ class DocumentAttachmentLink(Base):
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,
-        server_default=sa.text("now()"),
+        server_default=sa.func.now(),
     )
     created_by: Mapped[str | None] = mapped_column(
         sa.String(36),
         sa.ForeignKey("users.id", ondelete="SET NULL"),
         nullable=True,
     )
+
