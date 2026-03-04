@@ -1,0 +1,56 @@
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+src = ["app", "tests"]
+exclude = [".venv", "migrations/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM"]
+ignore = ["E501", "B008", "B904"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = false
+warn_unused_ignores = true
+ignore_missing_imports = true
+check_untyped_defs = true
+exclude = "(^migrations/versions/|^\\.venv/)"
+disable_error_code = [
+  "arg-type",
+  "assignment",
+  "attr-defined",
+  "dict-item",
+  "misc",
+  "return-value",
+  "typeddict-item",
+  "union-attr",
+  "no-untyped-def",
+  "no-untyped-call",
+  "no-any-return",
+  "type-arg",
+  "redundant-cast",
+]
+
+[[tool.mypy.overrides]]
+module = [
+  "app.core.*",
+  "app.db.*",
+  "app.router.*",
+  "app.modules.identity.*",
+  "app.modules.integrations.*",
+  "app.modules.ops.*",
+  "app.modules.tenancy.*",
+  "app.modules.rbac.*",
+]
+strict = true
+disable_error_code = [
+  "arg-type",
+  "assignment",
+  "attr-defined",
+  "dict-item",
+  "misc",
+  "return-value",
+  "typeddict-item",
+  "union-attr",
+  "unused-ignore",
+]
