@@ -34,6 +34,7 @@ class Settings(BaseSettings):
         env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",
         populate_by_name=True,
+        validate_by_name=True,
     )
 
     # App
