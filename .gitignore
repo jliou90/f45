@@ -1,79 +1,71 @@
-# Dependencies
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/
+secrets/tls/
+
+# Python virtualenv and caches
+.venv/
+**/.venv/
+backend/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node artifacts
 node_modules/
-.pnp/
-.pnp.js
-
-# Testing
-coverage/
-*.lcov
-.nyc_output/
-
-# Production builds
+**/node_modules/
+frontend/node_modules/
 dist/
 build/
-.next/
-out/
+coverage/
+.turbo/
+.vite/
 
-# Environment variables
-.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
-
-# Logs
+# Release/local artifact directories
+release_out/
+artifacts/
 logs/
-*.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-pnpm-debug.log*
+backups/
+backend/logs/
+KUTM/
+C:/KUTM/
 
-# OS files
+# Backup and patch scratch files
+*.bak*
+*.bak
+*.bak.patch*
+*.bak.*
+*_patch*.diff
+backend/_patch*.diff
+_merge_backup_patch4_*/
+_hardening_backup_*/
+backend/app/_legacy_middleware_patch*/
+
+# Repo-local helper outputs
+backend/.mypy_audit.txt
+backend/.ruff_audit.txt
+backend/_use_py312.ps1
+backend/_phase3_*.py
+backend/Set-ExecutionPolicy
+backend/tools/*_report.txt
+backend/tools/paged_everywhere_scan.py
+backend/tools/patch*_apply.py
+backend/tools/patch*_queue_*.py
+
+# OS / editors
 .DS_Store
 Thumbs.db
-*.swp
-*.swo
-*~
-
-# IDEs
-.idea/
 .vscode/
-*.sublime-*
-*.code-workspace
+.idea/
 
-# Turbo
-.turbo/
-
-# Database
-*.db
-*.db-shm
-*.db-wal
-*.sqlite
-*.sqlite3
-
-# Prisma
-prisma/migrations/**/migration.sql
-!prisma/migrations/**/README.md
-
-# Docker
-*.dockerignore
-docker-compose.override.yml
-
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Cache
-.cache/
-.parcel-cache/
-.eslintcache
-
-# TypeScript
-*.tsbuildinfo
-
-# Misc
-.vercel
-.netlify
+# Personal/local transcripts
+chat logs*.txt

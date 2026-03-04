@@ -1,0 +1,33 @@
+groups:
+  - name: kutm-api
+    rules:
+      - alert: KUTMHealthEndpointDown
+        expr: up{job="kutm-api"} == 0
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "KUTM API target is down"
+      - alert: KUTMHighErrorRate
+        expr: |
+          (
+            sum(rate(kutm_http_requests_total{status_code=~"5.."}[5m]))
+            /
+            sum(rate(kutm_http_requests_total[5m]))
+          ) > 0.02
+        for: 5m
+        labels:
+          severity: warning
+        annotations:
+          summary: "KUTM HTTP 5xx ratio above 2%"
+      - alert: KUTMHighP95Latency
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(kutm_http_request_duration_ms_bucket[10m])) by (le, path, method)
+          ) > 750
+        for: 10m
+        labels:
+          severity: warning
+        annotations:
+          summary: "KUTM HTTP p95 latency above 750ms"

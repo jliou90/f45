@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kutm_postgres
+    environment:
+      POSTGRES_DB: kutm
+      POSTGRES_USER: kutm
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5440:5432"
+    volumes:
+      - kutm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kutm -d kutm"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  kutm_pgdata:

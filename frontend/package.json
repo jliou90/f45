@@ -1,0 +1,50 @@
+{
+  "name": "frontend",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "npm run check:api-base && tsc -b && vite build",
+    "typecheck": "tsc -b --pretty false",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "gen:api": "tsx tools/gen-openapi.ts --from-file ./src/api/openapi.json",
+    "gen:api:live": "tsx tools/gen-openapi.ts --from-backend",
+    "lint": "eslint .",
+    "format": "eslint . --fix",
+    "preview": "vite preview",
+    "api:spec": "python ../backend/tools/export_openapi.py --out ./src/api/openapi.json",
+    "api:types": "openapi-typescript ./src/api/openapi.json -o ./src/api/types.ts",
+    "api:generate": "npm run api:spec && npm run api:types",
+    "check:api-base": "node ./tools/check-api-base.mjs",
+    "gen:openapi:types": "node ./tools/gen-openapi-types.mjs",
+    "check:openapi:types": "node ./tools/check-openapi-types-stale.mjs"
+  },
+  "dependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "react-router-dom": "^7.9.5"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.39.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.0",
+    "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^24.10.1",
+    "@types/react": "^19.2.5",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^5.1.1",
+    "eslint": "^9.39.1",
+    "eslint-plugin-react-hooks": "^7.0.1",
+    "eslint-plugin-react-refresh": "^0.4.24",
+    "globals": "^16.5.0",
+    "jsdom": "^27.2.0",
+    "openapi-typescript": "^7.10.1",
+    "tsx": "^4.20.6",
+    "typescript": "~5.9.3",
+    "typescript-eslint": "^8.46.4",
+    "vite": "^7.2.4",
+    "vitest": "^3.2.4"
+  }
+}
