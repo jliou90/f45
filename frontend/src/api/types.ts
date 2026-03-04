@@ -4597,7 +4597,9 @@ export interface operations {
     upsert_feature_flag_override_api_v1_admin_feature_flags_overrides__flag_key__put: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 flag_key: string;
             };
@@ -4636,7 +4638,9 @@ export interface operations {
                 role_id?: string | null;
                 user_id?: string | null;
             };
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 flag_key: string;
             };
@@ -4700,7 +4704,9 @@ export interface operations {
     create_invite_api_v1_admin_invites_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4733,7 +4739,9 @@ export interface operations {
     revoke_invite_api_v1_admin_invites__invite_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 invite_id: string;
             };
@@ -4817,7 +4825,9 @@ export interface operations {
     create_role_api_v1_admin_roles_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4881,7 +4891,9 @@ export interface operations {
     update_role_api_v1_admin_roles__role_id__put: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 role_id: string;
             };
@@ -4918,7 +4930,9 @@ export interface operations {
             query?: {
                 force?: boolean;
             };
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 role_id: string;
             };
@@ -4951,7 +4965,9 @@ export interface operations {
             query: {
                 session_id: string;
             };
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -4980,7 +4996,9 @@ export interface operations {
     set_logo_url_api_v1_admin_tenant_logo_url_put: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5033,7 +5051,9 @@ export interface operations {
     update_tenant_profile_api_v1_admin_tenant_profile_put: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5086,7 +5106,9 @@ export interface operations {
     update_tenant_theme_api_v1_admin_tenant_theme_put: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5152,7 +5174,9 @@ export interface operations {
     create_user_api_v1_admin_users_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5185,7 +5209,9 @@ export interface operations {
     bulk_users_api_v1_admin_users_bulk_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path?: never;
             cookie?: never;
         };
@@ -5249,7 +5275,9 @@ export interface operations {
     update_user_api_v1_admin_users__user_id__put: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 user_id: string;
             };
@@ -5284,7 +5312,9 @@ export interface operations {
     disable_user_api_v1_admin_users__user_id__delete: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 user_id: string;
             };
@@ -5315,7 +5345,9 @@ export interface operations {
     create_password_reset_api_v1_admin_users__user_id__password_reset_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 user_id: string;
             };
@@ -5346,7 +5378,9 @@ export interface operations {
     change_user_role_api_v1_admin_users__user_id__role_put: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 user_id: string;
             };
@@ -5415,7 +5449,9 @@ export interface operations {
     revoke_user_sessions_api_v1_admin_users__user_id__sessions_revoke_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                "Idempotency-Key"?: string | null;
+            };
             path: {
                 user_id: string;
             };
