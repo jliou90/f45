@@ -1,0 +1,80 @@
+.app {
+  margin: 0 auto;
+  max-width: 920px;
+  padding: 2rem 1rem 3rem;
+}
+
+.card {
+  background: #fff;
+  border: 1px solid #dde3ef;
+  border-radius: 12px;
+  margin-top: 1rem;
+  padding: 1rem;
+}
+
+.form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.form label {
+  display: grid;
+  font-weight: 600;
+  gap: 0.35rem;
+}
+
+.row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.tenantList {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tenantList li {
+  align-items: center;
+  border: 1px solid #dde3ef;
+  border-radius: 8px;
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding: 0.6rem 0.75rem;
+}
+
+.tenantList li.selected {
+  background: #f1f7ff;
+  border-color: #8db5ff;
+}
+
+.tenantList span {
+  color: #596377;
+  display: block;
+  font-size: 0.9rem;
+  margin-top: 0.2rem;
+}
+
+.hint {
+  color: #4a5568;
+  font-size: 0.95rem;
+  margin: 0.2rem 0;
+}
+
+.success {
+  border-color: #2f9e44;
+}
+
+.error {
+  border-color: #e03131;
+}
+
+pre {
+  background: #0d1117;
+  border-radius: 8px;
+  color: #e6edf3;
+  overflow-x: auto;
+  padding: 0.75rem;
+}
