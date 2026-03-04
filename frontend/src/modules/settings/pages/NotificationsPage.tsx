@@ -1,18 +1,13 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button } from "../../../ui";
 import { SETTINGS_RBAC } from "../capabilities";
 import { SectionGate } from "../components/SectionGate";
-import { useSettingsState } from "../layout/SettingsLayout";
+import { useSettingsState } from "../layout/settings-context";
 
 export function NotificationsPage() {
   const { settings, savePartial } = useSettingsState();
   const [desktopEnabled, setDesktopEnabled] = useState(settings.notifications.desktopEnabled);
   const [emailDigestEnabled, setEmailDigestEnabled] = useState(settings.notifications.emailDigestEnabled);
-
-  useEffect(() => {
-    setDesktopEnabled(settings.notifications.desktopEnabled);
-    setEmailDigestEnabled(settings.notifications.emailDigestEnabled);
-  }, [settings.notifications.desktopEnabled, settings.notifications.emailDigestEnabled]);
 
   const onSave = () => {
     savePartial({

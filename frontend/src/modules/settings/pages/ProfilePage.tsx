@@ -1,20 +1,15 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useAuth } from "../../../app/use-auth";
 import { Button, Input } from "../../../ui";
 import { SETTINGS_RBAC } from "../capabilities";
 import { SectionGate } from "../components/SectionGate";
-import { useSettingsState } from "../layout/SettingsLayout";
+import { useSettingsState } from "../layout/settings-context";
 
 export function ProfilePage() {
   const auth = useAuth();
   const { settings, savePartial } = useSettingsState();
   const [displayName, setDisplayName] = useState(settings.profile.displayName);
   const [avatarUrl, setAvatarUrl] = useState(settings.profile.avatarUrl);
-
-  useEffect(() => {
-    setDisplayName(settings.profile.displayName);
-    setAvatarUrl(settings.profile.avatarUrl);
-  }, [settings.profile.avatarUrl, settings.profile.displayName]);
 
   const onSave = () => {
     savePartial({

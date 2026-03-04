@@ -345,6 +345,9 @@ export function resolveDefaultLandingRoute(userKey?: string | null, lastRoute?: 
 }
 
 export const settingsWritePolicy = {
-  canWriteSection: (_section: SettingsSection) => true,
+  canWriteSection: (section: SettingsSection) => {
+    void section;
+    return true;
+  },
   getWritePermissionForSection,
 };

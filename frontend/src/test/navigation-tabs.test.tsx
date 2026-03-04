@@ -41,7 +41,7 @@ describe("module navigation", () => {
     );
   });
 
-  it("allows switching Service -> Sales -> Accounting", async () => {
+  it("allows switching DMS Home -> Accounting -> Comms", async () => {
     render(
       <MemoryRouter initialEntries={["/app"]}>
         <App />
@@ -53,17 +53,19 @@ describe("module navigation", () => {
     expect(sidebar).not.toBeNull();
     const nav = within(sidebar as HTMLElement);
 
-    fireEvent.click(nav.getByRole("link", { name: "Service" }));
-    await screen.findByRole("heading", { name: "Dashboard" });
+    fireEvent.click(nav.getByRole("link", { name: "DMS Home" }));
+    await screen.findByRole("heading", { name: "DMS Modules" });
 
-    fireEvent.click(nav.getByRole("link", { name: "Sales" }));
+    const accountingLink = nav.getByRole("link", { name: "Accounting" });
+    fireEvent.click(accountingLink);
     await waitFor(() => {
-      expect(screen.getByText(/Sales \/ Dashboard/)).toBeInTheDocument();
+      expect(accountingLink).toHaveAttribute("aria-current", "page");
     });
 
-    fireEvent.click(nav.getByRole("link", { name: "Accounting" }));
+    const commsLink = nav.getByRole("link", { name: "Comms" });
+    fireEvent.click(commsLink);
     await waitFor(() => {
-      expect(screen.getByText(/Accounting \/ Dashboard/)).toBeInTheDocument();
+      expect(commsLink).toHaveAttribute("aria-current", "page");
     });
   });
 });

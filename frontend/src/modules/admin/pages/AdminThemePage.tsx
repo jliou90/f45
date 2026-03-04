@@ -24,19 +24,23 @@ export function AdminThemePage() {
   useEffect(() => {
     const data = themeQuery.data;
     if (!data) return;
-    setForm((prev) => ({
-      ...prev,
-      accent_color: data.accent_color,
-      logo_variant: data.logo_variant,
-      sidebar_style: data.sidebar_style,
-      print_header_enabled: data.print_header_enabled,
-    }));
+    queueMicrotask(() => {
+      setForm((prev) => ({
+        ...prev,
+        accent_color: data.accent_color,
+        logo_variant: data.logo_variant,
+        sidebar_style: data.sidebar_style,
+        print_header_enabled: data.print_header_enabled,
+      }));
+    });
   }, [themeQuery.data]);
 
   useEffect(() => {
     const data = profileQuery.data;
     if (!data) return;
-    setForm((prev) => ({ ...prev, logo_url: data.logo_url ?? "" }));
+    queueMicrotask(() => {
+      setForm((prev) => ({ ...prev, logo_url: data.logo_url ?? "" }));
+    });
   }, [profileQuery.data]);
 
   const onSave = async () => {

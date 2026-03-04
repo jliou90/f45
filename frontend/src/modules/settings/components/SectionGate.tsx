@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { Badge, Modal } from "../../../ui";
-import { useSettingsState } from "../layout/SettingsLayout";
+import { useSettingsState } from "../layout/settings-context";
 
 type SectionGateRenderState = {
   canRead: boolean;

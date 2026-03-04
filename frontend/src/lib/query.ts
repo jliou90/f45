@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
 type QueryStatus = "idle" | "loading" | "success" | "error";
+const EMPTY_DEPS: unknown[] = [];
 
 export type QueryState<TData, TError = unknown> = {
   data: TData | null;
@@ -17,7 +18,7 @@ export function useQuery<TData, TError = unknown>(
   options?: { enabled?: boolean; deps?: unknown[]; debugLabel?: string },
 ): QueryState<TData, TError> {
   const enabled = options?.enabled ?? true;
-  const deps = options?.deps ?? [];
+  const deps = options?.deps ?? EMPTY_DEPS;
   const debugLabel = options?.debugLabel ?? fn.name ?? "anonymous_query";
   const fnRef = useRef(fn);
   const depsRef = useRef(deps);
@@ -66,7 +67,9 @@ export function useQuery<TData, TError = unknown>(
     if (!enabled) {
       return;
     }
-    void execute();
+    queueMicrotask(() => {
+      void execute();
+    });
   }, [enabled, execute, ...deps]);
 
   return {

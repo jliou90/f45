@@ -40,6 +40,6 @@ describe("Feature flags module visibility", () => {
     );
 
     expect(screen.queryByText("Comms")).not.toBeInTheDocument();
-    expect(screen.getByText("Reports")).toBeInTheDocument();
+    expect(screen.getByText("Accounting")).toBeInTheDocument();
   });
 });

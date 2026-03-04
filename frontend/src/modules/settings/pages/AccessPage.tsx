@@ -1,7 +1,7 @@
 import { Link } from "react-router-dom";
 import { Badge } from "../../../ui";
 import { SETTINGS_CAPABILITIES, SETTINGS_NON_GOALS, SETTINGS_RBAC } from "../capabilities";
-import { useSettingsState } from "../layout/SettingsLayout";
+import { useSettingsState } from "../layout/settings-context";
 
 type MatrixRow = {
   section: string;

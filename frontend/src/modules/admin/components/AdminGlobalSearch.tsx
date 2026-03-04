@@ -67,8 +67,10 @@ export function AdminGlobalSearch({ open, onClose }: { open: boolean; onClose: (
 
   useEffect(() => {
     if (!open) {
-      setQuery("");
-      setSelectedIndex(0);
+      queueMicrotask(() => {
+        setQuery("");
+        setSelectedIndex(0);
+      });
     }
   }, [open]);
 

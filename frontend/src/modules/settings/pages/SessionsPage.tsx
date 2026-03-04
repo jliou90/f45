@@ -5,7 +5,7 @@ import { Badge, Button } from "../../../ui";
 import { SETTINGS_RBAC } from "../capabilities";
 import { SectionGate } from "../components/SectionGate";
 import { loadSessionDevices } from "../data/settings.api";
-import { useSettingsState } from "../layout/SettingsLayout";
+import { useSettingsState } from "../layout/settings-context";
 
 export function SessionsPage() {
   const auth = useAuth();

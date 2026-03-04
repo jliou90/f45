@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { Drawer } from "../../../components/Drawer";
 import { useAuth } from "../../../app/use-auth";
 import { useFeatureFlag } from "../../../app/use-feature-flag";
@@ -98,15 +98,7 @@ export function AdminUsersPage() {
     return usersQuery.data.items.find((user) => user.id === impersonateUserId) ?? null;
   }, [impersonateUserId, usersQuery.data]);
 
-  useEffect(() => {
-    const focusId = searchParams.get("focus");
-    if (!focusId || !usersQuery.data) return;
-    const match = usersQuery.data.items.find((item) => item.id === focusId);
-    if (!match) return;
-    openEdit(match.id);
-  }, [searchParams, usersQuery.data]);
-
-  const openEdit = (userId: string) => {
+  const openEdit = useCallback((userId: string) => {
     const user = usersQuery.data?.items.find((item) => item.id === userId);
     if (!user) return;
     setEditForm({
@@ -118,7 +110,17 @@ export function AdminUsersPage() {
     setSessionsRevision((value) => value + 1);
     setInlineMessage(null);
     setError(null);
-  };
+  }, [usersQuery.data]);
+
+  useEffect(() => {
+    const focusId = searchParams.get("focus");
+    if (!focusId || !usersQuery.data) return;
+    const match = usersQuery.data.items.find((item) => item.id === focusId);
+    if (!match) return;
+    queueMicrotask(() => {
+      openEdit(match.id);
+    });
+  }, [openEdit, searchParams, usersQuery.data]);
 
   const toggleSelection = (userId: string, checked: boolean) => {
     setSelectedIds((prev) => {

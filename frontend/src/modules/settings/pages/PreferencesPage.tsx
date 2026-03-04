@@ -1,9 +1,9 @@
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { Button, Select } from "../../../ui";
 import { SETTINGS_RBAC } from "../capabilities";
 import { SectionGate } from "../components/SectionGate";
 import type { DefaultLanding, DensityMode } from "../data/settings.storage";
-import { useSettingsState } from "../layout/SettingsLayout";
+import { useSettingsState } from "../layout/settings-context";
 
 function timezoneOptions(): string[] {
   const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
@@ -13,10 +13,6 @@ function timezoneOptions(): string[] {
 export function PreferencesPage() {
   const { settings, savePartial } = useSettingsState();
   const [draft, setDraft] = useState(settings.preferences);
-
-  useEffect(() => {
-    setDraft(settings.preferences);
-  }, [settings.preferences]);
 
   const onSave = () => {
     savePartial({

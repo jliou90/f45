@@ -1,59 +1,49 @@
 import { NavLink, Outlet } from "react-router-dom";
-import { createContext, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
+import { useCallback, useMemo, useState, type ReactNode } from "react";
 import { useAuth } from "../../../app/use-auth";
 import { applyUserAppearance, readSettings, SettingsPermissionError, type UserSettingsV1, writeSettings } from "../data/settings.storage";
 import { SettingsSubnav } from "./SettingsSubnav";
 import { getFavorites, setFavorites } from "../../../lib/prefs";
 import { useSettingsAccess, type SettingsAccessModel } from "../rbac";
+import { SettingsContext, useSettingsState, type SettingsContextValue } from "./settings-context";
 
-type SettingsContextValue = {
-  settings: UserSettingsV1;
-  access: SettingsAccessModel;
-  saveError: SettingsPermissionError | null;
-  clearSaveError: () => void;
-  savePartial: (partial: Partial<UserSettingsV1>) => UserSettingsV1;
-};
-
-const SettingsContext = createContext<SettingsContextValue | null>(null);
-
-export function useSettingsState(): SettingsContextValue {
-  const context = useContext(SettingsContext);
-  if (!context) {
-    throw new Error("useSettingsState must be used inside SettingsLayout");
+function hydrateSettings(userKey?: string | null): UserSettingsV1 {
+  const current = readSettings(userKey);
+  if (current.workspace.pinnedApps.length > 0) {
+    return current;
   }
-  return context;
+  return {
+    ...current,
+    workspace: {
+      ...current.workspace,
+      pinnedApps: getFavorites(userKey),
+    },
+  };
 }
 
 function SettingsContextProvider({ children, access }: { children: ReactNode; access: SettingsAccessModel }) {
   const auth = useAuth();
   const userKey = auth.user?.email;
+  return (
+    <SettingsContextProviderInner key={userKey ?? "__anon"} userKey={userKey} access={access}>
+      {children}
+    </SettingsContextProviderInner>
+  );
+}
+
+function SettingsContextProviderInner({
+  children,
+  access,
+  userKey,
+}: {
+  children: ReactNode;
+  access: SettingsAccessModel;
+  userKey?: string | null;
+}) {
   const [saveError, setSaveError] = useState<SettingsPermissionError | null>(null);
-  const [settings, setSettings] = useState<UserSettingsV1>(() => {
-    const current = readSettings(userKey);
-    if (current.workspace.pinnedApps.length > 0) {
-      return current;
-    }
-    return {
-      ...current,
-      workspace: {
-        ...current.workspace,
-        pinnedApps: getFavorites(userKey),
-      },
-    };
-  });
+  const [settings, setSettings] = useState<UserSettingsV1>(() => hydrateSettings(userKey));
 
-  useEffect(() => {
-    const current = readSettings(userKey);
-    setSettings({
-      ...current,
-      workspace: {
-        ...current.workspace,
-        pinnedApps: current.workspace.pinnedApps.length > 0 ? current.workspace.pinnedApps : getFavorites(userKey),
-      },
-    });
-  }, [userKey]);
-
-  const savePartial = (partial: Partial<UserSettingsV1>): UserSettingsV1 => {
+  const savePartial = useCallback((partial: Partial<UserSettingsV1>): UserSettingsV1 => {
     try {
       const next = writeSettings(partial, userKey, {
         canWriteSection: access.canWriteSection,
@@ -77,7 +67,7 @@ function SettingsContextProvider({ children, access }: { children: ReactNode; ac
       }
       throw error;
     }
-  };
+  }, [access.canWriteSection, settings, userKey]);
 
   const value = useMemo<SettingsContextValue>(
     () => ({
@@ -87,7 +77,7 @@ function SettingsContextProvider({ children, access }: { children: ReactNode; ac
       clearSaveError: () => setSaveError(null),
       savePartial,
     }),
-    [access, saveError, settings],
+    [access, saveError, settings, savePartial],
   );
 
   return <SettingsContext.Provider value={value}>{children}</SettingsContext.Provider>;

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useFeatureFlags } from "../../../app/use-feature-flags";
 import { useTenant } from "../../../app/use-tenant";
 import { canAccess } from "../../../lib/rbac";
@@ -6,7 +6,7 @@ import { getLauncherTiles, getNavModel } from "../../../plugins/registry";
 import { Button } from "../../../ui";
 import { SETTINGS_RBAC } from "../capabilities";
 import { SectionGate } from "../components/SectionGate";
-import { useSettingsState } from "../layout/SettingsLayout";
+import { useSettingsState } from "../layout/settings-context";
 
 export function WorkspacePage() {
   const tenant = useTenant();
@@ -14,11 +14,6 @@ export function WorkspacePage() {
   const { settings, savePartial } = useSettingsState();
   const [pinnedApps, setPinnedApps] = useState<string[]>(settings.workspace.pinnedApps);
   const [recentHistoryEnabled, setRecentHistoryEnabled] = useState(settings.workspace.recentHistoryEnabled);
-
-  useEffect(() => {
-    setPinnedApps(settings.workspace.pinnedApps);
-    setRecentHistoryEnabled(settings.workspace.recentHistoryEnabled);
-  }, [settings.workspace.pinnedApps, settings.workspace.recentHistoryEnabled]);
 
   const apps = useMemo(() => {
     const isDev = import.meta.env.DEV;

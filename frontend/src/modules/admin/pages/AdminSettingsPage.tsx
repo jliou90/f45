@@ -20,15 +20,17 @@ export function AdminSettingsPage() {
 
   useEffect(() => {
     if (!profileQuery.data) return;
-    setForm({
-      display_name: profileQuery.data.display_name ?? "",
-      legal_name: profileQuery.data.legal_name ?? "",
-      phone: profileQuery.data.phone ?? "",
-      address_line1: profileQuery.data.address_line1 ?? "",
-      address_line2: profileQuery.data.address_line2 ?? "",
-      city: profileQuery.data.city ?? "",
-      state: profileQuery.data.state ?? "",
-      postal_code: profileQuery.data.postal_code ?? "",
+    queueMicrotask(() => {
+      setForm({
+        display_name: profileQuery.data?.display_name ?? "",
+        legal_name: profileQuery.data?.legal_name ?? "",
+        phone: profileQuery.data?.phone ?? "",
+        address_line1: profileQuery.data?.address_line1 ?? "",
+        address_line2: profileQuery.data?.address_line2 ?? "",
+        city: profileQuery.data?.city ?? "",
+        state: profileQuery.data?.state ?? "",
+        postal_code: profileQuery.data?.postal_code ?? "",
+      });
     });
   }, [profileQuery.data]);
 
