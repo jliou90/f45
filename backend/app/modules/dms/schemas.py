@@ -142,6 +142,8 @@ class AppointmentCreate(BaseModel):
 
     status: str = Field(default="scheduled", max_length=30)
     notes: str | None = None
+    technician_user_id: str | None = None
+    service_advisor_user_id: str | None = None
 
 
 class AppointmentOut(BaseModel):
@@ -157,6 +159,8 @@ class AppointmentOut(BaseModel):
     scheduled_end: datetime | None
     status: str
     notes: str | None
+    technician_user_id: str | None
+    service_advisor_user_id: str | None
 
 
 class AppointmentUpdate(BaseModel):
@@ -166,6 +170,8 @@ class AppointmentUpdate(BaseModel):
     vehicle_id: str | None = None
     status: str | None = Field(default=None, max_length=30)
     notes: str | None = None
+    technician_user_id: str | None = None
+    service_advisor_user_id: str | None = None
 
 
 class AppointmentPatch(BaseModel):
@@ -175,3 +181,5 @@ class AppointmentPatch(BaseModel):
     vehicle_id: str | None = None
     status: str | None = Field(default=None, max_length=30)
     notes: str | None = None
+    technician_user_id: str | None = None
+    service_advisor_user_id: str | None = None

@@ -10,6 +10,7 @@ from app.core.tenancy.deps import get_current_tenant
 from app.modules.accounting.api import router as accounting_router
 from app.modules.admin.api import router as admin_router
 from app.modules.audit.api import router as audit_router
+from app.modules.comms.api import router as comms_router
 from app.modules.deals.api import router as deals_router
 from app.modules.dms.api import router as dms_router
 from app.modules.documents.api import router as documents_router
@@ -141,6 +142,7 @@ def build_api_router(*, api_prefix: str = "") -> APIRouter:
 
         # --- Core domain (tenant-scoped) ---
         RouteMount(dms_router, tenant_required=True, tags=("dms",)),
+        RouteMount(comms_router, tenant_required=True, tags=("comms",)),
         RouteMount(service_router, tenant_required=True, tags=("service",)),
         RouteMount(deals_router, tenant_required=True, tags=("deals",)),
         RouteMount(inventory_router, tenant_required=True, tags=("inventory",)),

@@ -4,6 +4,7 @@ from pydantic import BaseModel, EmailStr, Field
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    otp_code: str | None = None
 
 
 class RefreshRequest(BaseModel):
@@ -39,3 +40,18 @@ class AcceptInviteRequest(BaseModel):
 class PasswordResetConsumeRequest(BaseModel):
     token: str = Field(min_length=20)
     new_password: str = Field(min_length=8, max_length=128)
+
+
+class MfaEnrollStartOut(BaseModel):
+    secret: str
+    otpauth_url: str
+    mfa_enabled: bool
+
+
+class MfaCodeIn(BaseModel):
+    otp_code: str = Field(min_length=6, max_length=8)
+
+
+class MfaStatusOut(BaseModel):
+    ok: bool
+    mfa_enabled: bool

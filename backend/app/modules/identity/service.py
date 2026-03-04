@@ -12,6 +12,7 @@ from app.core.auth.jwt import (
 )
 from app.core.config import settings
 from app.core.errors import AppError
+from app.core.mfa import generate_base32_secret, provisioning_uri, verify_totp
 from app.core.security import hash_password, verify_password
 from app.modules.identity.models import RefreshToken, User
 from sqlalchemy import update
@@ -45,7 +46,7 @@ def _is_locked(user: User, now: datetime) -> bool:
     return bool(user.locked_until and user.locked_until > now)
 
 
-def authenticate(db: Session, email: str, password: str) -> User | None:
+def authenticate(db: Session, email: str, password: str, otp_code: str | None = None) -> User | None:
     now = _utcnow()
     user = db.query(User).filter(User.email == email.strip().lower()).one_or_none()
     if not user:
@@ -68,6 +69,22 @@ def authenticate(db: Session, email: str, password: str) -> User | None:
             db.add(user)
         _audit_auth_event("login_failed", reason="bad_password", user_id=user.id)
         return None
+
+    if bool(user.mfa_enabled):
+        if not user.mfa_secret:
+            _audit_auth_event("login_failed", reason="mfa_secret_missing", user_id=user.id)
+            raise AppError(
+                code="auth_mfa_required",
+                message="MFA code required",
+                status_code=401,
+            )
+        if not otp_code or not verify_totp(user.mfa_secret, otp_code):
+            _audit_auth_event("login_failed", reason="mfa_invalid", user_id=user.id)
+            raise AppError(
+                code="auth_mfa_required",
+                message="MFA code required",
+                status_code=401,
+            )
 
     if user.failed_login_attempts or user.locked_until is not None:
         user.failed_login_attempts = 0
@@ -308,3 +325,35 @@ def disable_user(db: Session, *, user: User) -> None:
     db.add(user)
     revoke_all_refresh_tokens_for_user(db, user_id=user.id, reason="user_disabled")
     _audit_auth_event("user_disabled", user_id=user.id)
+
+
+def begin_mfa_enrollment(db: Session, *, user: User, issuer: str = "KUTM") -> tuple[str, str]:
+    if user.is_disabled or not user.is_active:
+        raise AppError(code="auth_user_disabled", message="User is disabled", status_code=401)
+    secret = generate_base32_secret(32)
+    user.mfa_secret = secret
+    user.mfa_enabled = False
+    db.add(user)
+    _audit_auth_event("mfa_enroll_started", user_id=user.id)
+    return secret, provisioning_uri(account_name=user.email, issuer=issuer, secret=secret)
+
+
+def confirm_mfa_enrollment(db: Session, *, user: User, otp_code: str) -> None:
+    if not user.mfa_secret:
+        raise AppError(code="auth_mfa_not_initialized", message="MFA enrollment not started", status_code=400)
+    if not verify_totp(user.mfa_secret, otp_code):
+        raise AppError(code="auth_mfa_invalid_code", message="Invalid MFA code", status_code=400)
+    user.mfa_enabled = True
+    db.add(user)
+    _audit_auth_event("mfa_enabled", user_id=user.id)
+
+
+def disable_mfa(db: Session, *, user: User, otp_code: str) -> None:
+    if not user.mfa_enabled or not user.mfa_secret:
+        raise AppError(code="auth_mfa_not_enabled", message="MFA is not enabled", status_code=400)
+    if not verify_totp(user.mfa_secret, otp_code):
+        raise AppError(code="auth_mfa_invalid_code", message="Invalid MFA code", status_code=400)
+    user.mfa_enabled = False
+    user.mfa_secret = None
+    db.add(user)
+    _audit_auth_event("mfa_disabled", user_id=user.id)

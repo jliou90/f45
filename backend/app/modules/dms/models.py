@@ -144,3 +144,15 @@ class Appointment(Base, TimestampMixin, SoftDeleteMixin, VersionedMixin):
 
     status: Mapped[str] = mapped_column(String(30), nullable=False, default="scheduled", index=True)
     notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+    technician_user_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )
+    service_advisor_user_id: Mapped[str | None] = mapped_column(
+        String(36),
+        ForeignKey("users.id"),
+        nullable=True,
+        index=True,
+    )

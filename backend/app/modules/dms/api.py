@@ -9,7 +9,7 @@ from app.core.auth.deps import get_current_user
 from app.core.errors import AppError
 from app.core.idempotency import idempotency_guard
 from app.core.pagination import PageResult
-from app.core.paging import paginate_query
+from app.core.paging import paginate_items, paginate_query
 from app.core.querying import Page, Sort, apply_sort, page_params, sort_params
 from app.core.rbac import Permission, require_permission
 from app.core.request_id import get_request_id
@@ -35,6 +35,9 @@ from app.modules.dms.schemas import (
     VehicleUpdate,
 )
 from app.modules.eventstore.service import append_event
+from app.modules.identity.models import User
+from app.modules.integrations.service import enqueue_outbox
+from app.modules.tenancy.models import Membership
 from app.modules.tenancy.deps import get_tenant_id
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from pydantic import BaseModel, Field
@@ -226,6 +229,43 @@ def _ensure_version(obj: Any) -> int:
     return version
 
 
+def _queue_schedule_change_notifications(
+    *,
+    db: Session,
+    tenant_id: str,
+    appointment_id: str,
+    old_start: datetime | None,
+    old_end: datetime | None,
+    new_start: datetime | None,
+    new_end: datetime | None,
+    technician_user_id: str | None,
+    advisor_user_id: str | None,
+) -> None:
+    if old_start == new_start and old_end == new_end:
+        return
+    payload = {
+        "appointment_id": appointment_id,
+        "old_start": old_start.isoformat() if old_start else None,
+        "old_end": old_end.isoformat() if old_end else None,
+        "new_start": new_start.isoformat() if new_start else None,
+        "new_end": new_end.isoformat() if new_end else None,
+    }
+    if technician_user_id:
+        enqueue_outbox(
+            db=db,
+            tenant_id=tenant_id,
+            topic="appointments.technician.schedule_changed",
+            payload={**payload, "user_id": technician_user_id},
+        )
+    if advisor_user_id:
+        enqueue_outbox(
+            db=db,
+            tenant_id=tenant_id,
+            topic="appointments.service_advisor.schedule_changed",
+            payload={**payload, "user_id": advisor_user_id},
+        )
+
+
 class CommsApprovalIn(BaseModel):
     decision: str = Field(min_length=3, max_length=20)
     at: str | None = None
@@ -234,6 +274,12 @@ class CommsApprovalIn(BaseModel):
 class CommsApprovalOut(BaseModel):
     queued: bool
     request_id: str
+
+
+class TechnicianAvailabilityOut(BaseModel):
+    user_id: str
+    email: str
+    busy: list[dict[str, str | None]]
 
 
 # ---------------- Customers ----------------
@@ -640,6 +686,56 @@ def post_comms_approval(
 
 # ---------------- Appointments ----------------
 
+@router.get("/availability/technicians", response_model=PageResult[TechnicianAvailabilityOut])
+def technician_availability(
+    day: date = Query(..., description="YYYY-MM-DD"),
+    page: Page = Depends(page_params),
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
+    _user=Depends(get_current_user),
+    _perm=Depends(require_permission(Permission.DMS_SCHEDULER_READ)),
+) -> PageResult[TechnicianAvailabilityOut]:
+    start = datetime.combine(day, datetime.min.time()).astimezone()
+    end = start + timedelta(days=1)
+    tech_rows = (
+        db.query(User.id, User.email)
+        .join(Membership, Membership.user_id == User.id)
+        .filter(
+            Membership.tenant_id == tenant_id,
+            User.is_active.is_(True),
+            User.is_disabled.is_(False),
+        )
+        .order_by(User.email.asc())
+        .all()
+    )
+    appts = (
+        db.query(Appointment)
+        .filter(
+            Appointment.tenant_id == tenant_id,
+            Appointment.is_deleted.is_(False),
+            Appointment.scheduled_start >= start,
+            Appointment.scheduled_start < end,
+            Appointment.technician_user_id.is_not(None),
+        )
+        .order_by(Appointment.scheduled_start.asc())
+        .all()
+    )
+    busy_map: dict[str, list[dict[str, str | None]]] = {}
+    for a in appts:
+        tech_id = a.technician_user_id
+        if not tech_id:
+            continue
+        busy_map.setdefault(tech_id, []).append(
+            {
+                "appointment_id": a.id,
+                "start": a.scheduled_start.isoformat() if a.scheduled_start else None,
+                "end": a.scheduled_end.isoformat() if a.scheduled_end else None,
+            }
+        )
+    items = [TechnicianAvailabilityOut(user_id=row.id, email=row.email, busy=busy_map.get(row.id, [])) for row in tech_rows]
+    return paginate_items(items, page=page, item_map=lambda x: x)
+
+
 @router.post("/appointments", response_model=AppointmentOut)
 def create_appointment(
     request: Request,
@@ -668,6 +764,17 @@ def create_appointment(
         appt = Appointment(id=str(uuid4()), tenant_id=tenant_id, **data)
         db.add(appt)
         db.flush()
+        _queue_schedule_change_notifications(
+            db=db,
+            tenant_id=tenant_id,
+            appointment_id=appt.id,
+            old_start=None,
+            old_end=None,
+            new_start=appt.scheduled_start,
+            new_end=appt.scheduled_end,
+            technician_user_id=appt.technician_user_id,
+            advisor_user_id=appt.service_advisor_user_id,
+        )
         _set_etag(response, _ensure_version(appt))
         return AppointmentOut.model_validate(appt, from_attributes=True)
 
@@ -688,6 +795,8 @@ def update_appointment(
     with uow as db:
         appt = _get_appointment(db, tenant_id, appointment_id)
         _require_match_or_allow("Appointment", getattr(appt, "version", 1), if_match)
+        old_start = appt.scheduled_start
+        old_end = appt.scheduled_end
 
         start = payload.scheduled_start
         end = default_end(start, payload.scheduled_end)
@@ -703,6 +812,17 @@ def update_appointment(
         _bump_version(appt)
 
         db.flush()
+        _queue_schedule_change_notifications(
+            db=db,
+            tenant_id=tenant_id,
+            appointment_id=appt.id,
+            old_start=old_start,
+            old_end=old_end,
+            new_start=appt.scheduled_start,
+            new_end=appt.scheduled_end,
+            technician_user_id=appt.technician_user_id,
+            advisor_user_id=appt.service_advisor_user_id,
+        )
         _set_etag(response, _ensure_version(appt))
         return AppointmentOut.model_validate(appt, from_attributes=True)
 
@@ -723,6 +843,8 @@ def patch_appointment(
     with uow as db:
         appt = _get_appointment(db, tenant_id, appointment_id)
         _require_match_or_allow("Appointment", getattr(appt, "version", 1), if_match)
+        old_start = appt.scheduled_start
+        old_end = appt.scheduled_end
 
         start = getattr(payload, "scheduled_start", None) or appt.scheduled_start
         end_in = getattr(payload, "scheduled_end", None) or appt.scheduled_end
@@ -742,6 +864,17 @@ def patch_appointment(
         _bump_version(appt)
 
         db.flush()
+        _queue_schedule_change_notifications(
+            db=db,
+            tenant_id=tenant_id,
+            appointment_id=appt.id,
+            old_start=old_start,
+            old_end=old_end,
+            new_start=appt.scheduled_start,
+            new_end=appt.scheduled_end,
+            technician_user_id=appt.technician_user_id,
+            advisor_user_id=appt.service_advisor_user_id,
+        )
         _set_etag(response, _ensure_version(appt))
         return AppointmentOut.model_validate(appt, from_attributes=True)
 

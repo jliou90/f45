@@ -16,6 +16,14 @@ PERMISSION_CATALOG: tuple[tuple[str, str], ...] = (
     ("tenant.settings.write", "Manage tenant settings"),
     ("featureflags.write", "Manage tenant feature flags"),
     ("theme.write", "Manage tenant branding theme"),
+    ("dms.scheduler.read", "View technician availability and scheduler context"),
+    ("comms.customer.read", "View outbound customer communications"),
+    ("comms.customer.write", "Send and log outbound customer communications"),
+    ("comms.funding.write", "Send lender stip communications and update funding status"),
+    ("inventory.supplies.read", "View consumable inventory supply levels"),
+    ("inventory.supplies.write", "Create and update consumable inventory supplies"),
+    ("inventory.procurement.read", "View inventory procurement order batches"),
+    ("inventory.procurement.write", "Create and update inventory procurement order batches"),
 )
 
 DEFAULT_ADMIN_PERMISSIONS: tuple[str, ...] = (
@@ -25,6 +33,14 @@ DEFAULT_ADMIN_PERMISSIONS: tuple[str, ...] = (
     "admin.roles.write",
     "admin.audit.read",
     "ops.console.read",
+    "dms.scheduler.read",
+    "comms.customer.read",
+    "comms.customer.write",
+    "comms.funding.write",
+    "inventory.supplies.read",
+    "inventory.supplies.write",
+    "inventory.procurement.read",
+    "inventory.procurement.write",
 )
 
 

@@ -33,6 +33,13 @@ class User(Base):
         server_default="0",
     )
     locked_until: Mapped[datetime | None] = mapped_column(sa.DateTime(timezone=True), nullable=True)
+    mfa_enabled: Mapped[bool] = mapped_column(
+        sa.Boolean,
+        nullable=False,
+        default=False,
+        server_default=sa.text("false"),
+    )
+    mfa_secret: Mapped[str | None] = mapped_column(sa.String(128), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         sa.DateTime(timezone=True),
         nullable=False,

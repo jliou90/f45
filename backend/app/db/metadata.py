@@ -22,6 +22,7 @@ from app.modules.admin.models import (  # noqa: F401
 
 # Platform audit
 from app.modules.audit.models import AuditEvent, AuditLog  # noqa: F401
+from app.modules.comms.models import OutboundCommunication  # noqa: F401
 from app.modules.dms.models import Appointment, Customer, Vehicle  # noqa: F401
 from app.modules.documents.models import (  # noqa: F401
     Document,
@@ -37,6 +38,11 @@ from app.modules.integrations.models import (  # noqa: F401
     IdempotencyRecord,
     OutboxMessage,
     WebhookSubscription,
+)
+from app.modules.inventory.models import (  # noqa: F401
+    InventoryOrderBatch,
+    InventoryOrderBatchLine,
+    InventorySupplyItem,
 )
 from app.modules.jobs.models import Job  # noqa: F401
 from app.modules.rbac.models import PermissionGrant, Role, RolePermission  # noqa: F401

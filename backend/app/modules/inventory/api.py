@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from uuid import uuid4
+
 from app.core.auth.deps import get_current_user
 from app.core.errors import AppError
 from app.core.idempotency import (
@@ -20,7 +22,15 @@ from app.modules.inventory.schemas import (
     InventoryQueueItem,
     InventoryTransition,
     InventoryUnitCreate,
+    OrderBatchCreate,
+    OrderBatchLineOut,
+    OrderBatchLineUpsert,
+    OrderBatchOut,
+    OrderBatchUpdate,
     ReconItemCreate,
+    SupplyItemCreate,
+    SupplyItemOut,
+    SupplyItemUpdate,
 )
 from app.modules.inventory.service import (
     add_recon_item,
@@ -28,6 +38,11 @@ from app.modules.inventory.service import (
     create_unit,
     get_inventory_doc,
     transition_unit,
+)
+from app.modules.inventory.models import (
+    InventoryOrderBatch,
+    InventoryOrderBatchLine,
+    InventorySupplyItem,
 )
 from app.modules.tenancy.deps import get_tenant_id
 from fastapi import APIRouter, Depends, Header, Query, Request
@@ -38,6 +53,57 @@ router = APIRouter(
     tags=["inventory"],
     dependencies=[Depends(get_current_user), Depends(require_permission(Permission.INVENTORY_READ))],
 )
+
+
+def _supply_out(row: InventorySupplyItem) -> SupplyItemOut:
+    return SupplyItemOut(
+        id=row.id,
+        sku=row.sku,
+        name=row.name,
+        on_hand_qty=int(row.on_hand_qty or 0),
+        reorder_point=int(row.reorder_point or 0),
+        reorder_qty=int(row.reorder_qty or 0),
+        unit=row.unit,
+        vendor=row.vendor,
+        low_stock=int(row.on_hand_qty or 0) <= int(row.reorder_point or 0),
+        created_at=row.created_at,
+        updated_at=row.updated_at,
+    )
+
+
+def _batch_out(db: Session, *, batch: InventoryOrderBatch, tenant_id: str) -> OrderBatchOut:
+    lines = (
+        db.query(InventoryOrderBatchLine, InventorySupplyItem)
+        .join(
+            InventorySupplyItem,
+            (InventorySupplyItem.id == InventoryOrderBatchLine.supply_item_id)
+            & (InventorySupplyItem.tenant_id == InventoryOrderBatchLine.tenant_id),
+        )
+        .filter(InventoryOrderBatchLine.tenant_id == tenant_id, InventoryOrderBatchLine.batch_id == batch.id)
+        .order_by(InventorySupplyItem.name.asc())
+        .all()
+    )
+    return OrderBatchOut(
+        id=batch.id,
+        name=batch.name,
+        status=batch.status,
+        notes=batch.notes,
+        created_by=batch.created_by,
+        created_at=batch.created_at,
+        updated_at=batch.updated_at,
+        lines=[
+            OrderBatchLineOut(
+                id=line.id,
+                supply_item_id=line.supply_item_id,
+                supply_sku=supply.sku,
+                supply_name=supply.name,
+                qty=int(line.qty or 0),
+                created_at=line.created_at,
+                updated_at=line.updated_at,
+            )
+            for line, supply in lines
+        ],
+    )
 
 
 @router.post("/units", response_model=InventoryDocOut)
@@ -248,3 +314,185 @@ def queue(
             updated_at=d.updated_at,
         ),
     )
+
+
+@router.get("/supplies", response_model=PageResult[SupplyItemOut], dependencies=[Depends(require_permission(Permission.INVENTORY_SUPPLIES_READ))])
+def list_supplies(
+    q: str | None = Query(default=None),
+    low_only: bool = Query(default=False),
+    page: Page = Depends(page_params),
+    sort: Sort = Depends(sort_params),
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
+):
+    qry = db.query(InventorySupplyItem).filter(InventorySupplyItem.tenant_id == tenant_id)
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        qry = qry.filter((InventorySupplyItem.name.ilike(like)) | (InventorySupplyItem.sku.ilike(like)))
+    if low_only:
+        qry = qry.filter(InventorySupplyItem.on_hand_qty <= InventorySupplyItem.reorder_point)
+    if sort.fields:
+        qry = apply_sort(qry, InventorySupplyItem, sort, allowed={"sku", "name", "on_hand_qty", "reorder_point", "updated_at"})
+    else:
+        qry = qry.order_by(InventorySupplyItem.name.asc())
+    return paginate_query(qry, page=page, item_map=_supply_out)
+
+
+@router.post("/supplies", response_model=SupplyItemOut, dependencies=[Depends(require_permission(Permission.INVENTORY_SUPPLIES_WRITE))])
+def create_supply(
+    payload: SupplyItemCreate,
+    uow: UnitOfWork = Depends(get_uow),
+    tenant_id: str = Depends(get_tenant_id),
+    _idmp=Depends(idempotency_guard),
+):
+    with uow as db:
+        row = InventorySupplyItem(
+            id=str(uuid4()),
+            tenant_id=tenant_id,
+            sku=payload.sku.strip().upper(),
+            name=payload.name.strip(),
+            on_hand_qty=payload.on_hand_qty,
+            reorder_point=payload.reorder_point,
+            reorder_qty=payload.reorder_qty,
+            unit=payload.unit.strip(),
+            vendor=(payload.vendor or "").strip() or None,
+        )
+        db.add(row)
+        db.flush()
+        return _supply_out(row)
+
+
+@router.patch("/supplies/{supply_id}", response_model=SupplyItemOut, dependencies=[Depends(require_permission(Permission.INVENTORY_SUPPLIES_WRITE))])
+def patch_supply(
+    supply_id: str,
+    payload: SupplyItemUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    tenant_id: str = Depends(get_tenant_id),
+    _idmp=Depends(idempotency_guard),
+):
+    with uow as db:
+        row = (
+            db.query(InventorySupplyItem)
+            .filter(InventorySupplyItem.tenant_id == tenant_id, InventorySupplyItem.id == supply_id)
+            .one_or_none()
+        )
+        if row is None:
+            raise AppError(code="inventory_supply_not_found", message="Supply item not found", status_code=404)
+        data = payload.model_dump(exclude_unset=True)
+        for key, value in data.items():
+            setattr(row, key, value)
+        db.flush()
+        return _supply_out(row)
+
+
+@router.post("/order-batches", response_model=OrderBatchOut, dependencies=[Depends(require_permission(Permission.INVENTORY_PROCUREMENT_WRITE))])
+def create_order_batch(
+    payload: OrderBatchCreate,
+    uow: UnitOfWork = Depends(get_uow),
+    tenant_id: str = Depends(get_tenant_id),
+    user=Depends(get_current_user),
+    _idmp=Depends(idempotency_guard),
+):
+    with uow as db:
+        batch = InventoryOrderBatch(
+            id=str(uuid4()),
+            tenant_id=tenant_id,
+            name=payload.name.strip(),
+            status="draft",
+            notes=payload.notes,
+            created_by=user.id,
+        )
+        db.add(batch)
+        db.flush()
+        return _batch_out(db, batch=batch, tenant_id=tenant_id)
+
+
+@router.get("/order-batches", response_model=PageResult[OrderBatchOut], dependencies=[Depends(require_permission(Permission.INVENTORY_PROCUREMENT_READ))])
+def list_order_batches(
+    status: str | None = Query(default=None),
+    page: Page = Depends(page_params),
+    sort: Sort = Depends(sort_params),
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
+):
+    qry = db.query(InventoryOrderBatch).filter(InventoryOrderBatch.tenant_id == tenant_id)
+    if status and status.strip():
+        qry = qry.filter(InventoryOrderBatch.status == status.strip().lower())
+    if sort.fields:
+        qry = apply_sort(qry, InventoryOrderBatch, sort, allowed={"status", "name", "updated_at", "created_at"})
+    else:
+        qry = qry.order_by(InventoryOrderBatch.updated_at.desc())
+    return paginate_query(qry, page=page, item_map=lambda b: _batch_out(db, batch=b, tenant_id=tenant_id))
+
+
+@router.patch("/order-batches/{batch_id}", response_model=OrderBatchOut, dependencies=[Depends(require_permission(Permission.INVENTORY_PROCUREMENT_WRITE))])
+def update_order_batch(
+    batch_id: str,
+    payload: OrderBatchUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    tenant_id: str = Depends(get_tenant_id),
+    _idmp=Depends(idempotency_guard),
+):
+    with uow as db:
+        batch = (
+            db.query(InventoryOrderBatch)
+            .filter(InventoryOrderBatch.tenant_id == tenant_id, InventoryOrderBatch.id == batch_id)
+            .one_or_none()
+        )
+        if batch is None:
+            raise AppError(code="inventory_order_batch_not_found", message="Order batch not found", status_code=404)
+        data = payload.model_dump(exclude_unset=True)
+        for key, value in data.items():
+            if isinstance(value, str) and key == "status":
+                value = value.strip().lower()
+            setattr(batch, key, value)
+        db.flush()
+        return _batch_out(db, batch=batch, tenant_id=tenant_id)
+
+
+@router.put("/order-batches/{batch_id}/lines", response_model=OrderBatchOut, dependencies=[Depends(require_permission(Permission.INVENTORY_PROCUREMENT_WRITE))])
+def upsert_order_batch_line(
+    batch_id: str,
+    payload: OrderBatchLineUpsert,
+    uow: UnitOfWork = Depends(get_uow),
+    tenant_id: str = Depends(get_tenant_id),
+    _idmp=Depends(idempotency_guard),
+):
+    with uow as db:
+        batch = (
+            db.query(InventoryOrderBatch)
+            .filter(InventoryOrderBatch.tenant_id == tenant_id, InventoryOrderBatch.id == batch_id)
+            .one_or_none()
+        )
+        if batch is None:
+            raise AppError(code="inventory_order_batch_not_found", message="Order batch not found", status_code=404)
+        supply = (
+            db.query(InventorySupplyItem)
+            .filter(InventorySupplyItem.tenant_id == tenant_id, InventorySupplyItem.id == payload.supply_item_id)
+            .one_or_none()
+        )
+        if supply is None:
+            raise AppError(code="inventory_supply_not_found", message="Supply item not found", status_code=404)
+
+        line = (
+            db.query(InventoryOrderBatchLine)
+            .filter(
+                InventoryOrderBatchLine.tenant_id == tenant_id,
+                InventoryOrderBatchLine.batch_id == batch_id,
+                InventoryOrderBatchLine.supply_item_id == payload.supply_item_id,
+            )
+            .one_or_none()
+        )
+        if line is None:
+            line = InventoryOrderBatchLine(
+                id=str(uuid4()),
+                tenant_id=tenant_id,
+                batch_id=batch_id,
+                supply_item_id=payload.supply_item_id,
+                qty=payload.qty,
+            )
+        else:
+            line.qty = payload.qty
+        db.add(line)
+        db.flush()
+        return _batch_out(db, batch=batch, tenant_id=tenant_id)

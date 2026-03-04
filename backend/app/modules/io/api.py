@@ -5,6 +5,7 @@ import io
 import json
 import logging
 import os
+import zipfile
 from uuid import uuid4
 
 from app.core.auth.deps import get_current_user
@@ -57,6 +58,157 @@ def _to_xml(doc_type: str, rows: list[dict]) -> bytes:
     return DefusedET.tostring(root, encoding="utf-8", xml_declaration=True)
 
 
+def _to_xlsx(rows: list[dict]) -> bytes:
+    cols: list[str] = []
+    seen: set[str] = set()
+    for row in rows:
+        for key in row.keys():
+            if key not in seen:
+                cols.append(key)
+                seen.add(key)
+
+    sheet_rows = [cols]
+    for row in rows:
+        sheet_rows.append([str(row.get(col, "")) for col in cols])
+
+    shared_values: list[str] = []
+    shared_index: dict[str, int] = {}
+    for row in sheet_rows:
+        for value in row:
+            if value not in shared_index:
+                shared_index[value] = len(shared_values)
+                shared_values.append(value)
+
+    def col_name(idx: int) -> str:
+        value = idx + 1
+        out = ""
+        while value > 0:
+            value, rem = divmod(value - 1, 26)
+            out = chr(65 + rem) + out
+        return out
+
+    lines = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>']
+    lines.append('<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>')
+    for r_idx, row in enumerate(sheet_rows, start=1):
+        lines.append(f'<row r="{r_idx}">')
+        for c_idx, value in enumerate(row, start=1):
+            cell_ref = f"{col_name(c_idx - 1)}{r_idx}"
+            lines.append(f'<c r="{cell_ref}" t="s"><v>{shared_index[value]}</v></c>')
+        lines.append("</row>")
+    lines.append("</sheetData></worksheet>")
+    sheet_xml = "".join(lines).encode("utf-8")
+
+    sst_lines = ['<?xml version="1.0" encoding="UTF-8" standalone="yes"?>']
+    sst_lines.append(
+        f'<sst xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" count="{len(shared_values)}" uniqueCount="{len(shared_values)}">'
+    )
+    for value in shared_values:
+        esc = (
+            value.replace("&", "&amp;")
+            .replace("<", "&lt;")
+            .replace(">", "&gt;")
+        )
+        sst_lines.append(f"<si><t>{esc}</t></si>")
+    sst_lines.append("</sst>")
+    shared_xml = "".join(sst_lines).encode("utf-8")
+
+    workbook_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" '
+        'xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">'
+        '<sheets><sheet name="Export" sheetId="1" r:id="rId1"/></sheets></workbook>'
+    ).encode("utf-8")
+    rels_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/>'
+        '<Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>'
+        '<Relationship Id="rId3" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/sharedStrings" Target="sharedStrings.xml"/>'
+        "</Relationships>"
+    ).encode("utf-8")
+    root_rels_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+        '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>'
+        "</Relationships>"
+    ).encode("utf-8")
+    styles_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">'
+        '<fonts count="1"><font><sz val="11"/><name val="Calibri"/></font></fonts>'
+        '<fills count="1"><fill><patternFill patternType="none"/></fill></fills>'
+        '<borders count="1"><border/></borders>'
+        '<cellStyleXfs count="1"><xf/></cellStyleXfs>'
+        '<cellXfs count="1"><xf/></cellXfs>'
+        "</styleSheet>"
+    ).encode("utf-8")
+    content_types_xml = (
+        '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>'
+        '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+        '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+        '<Default Extension="xml" ContentType="application/xml"/>'
+        '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>'
+        '<Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>'
+        '<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'
+        '<Override PartName="/xl/sharedStrings.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sharedStrings+xml"/>'
+        "</Types>"
+    ).encode("utf-8")
+
+    out = io.BytesIO()
+    with zipfile.ZipFile(out, "w", zipfile.ZIP_DEFLATED) as zf:
+        zf.writestr("[Content_Types].xml", content_types_xml)
+        zf.writestr("_rels/.rels", root_rels_xml)
+        zf.writestr("xl/workbook.xml", workbook_xml)
+        zf.writestr("xl/_rels/workbook.xml.rels", rels_xml)
+        zf.writestr("xl/worksheets/sheet1.xml", sheet_xml)
+        zf.writestr("xl/sharedStrings.xml", shared_xml)
+        zf.writestr("xl/styles.xml", styles_xml)
+    return out.getvalue()
+
+
+def _to_pdf(*, title: str, rows: list[dict], orientation: str, scale: int) -> bytes:
+    # Tiny text-only PDF generator to keep exports dependency-free.
+    lines = [f"{title} ({orientation}, scale={scale}%)", ""]
+    for row in rows[:200]:
+        pieces = [f"{k}={row.get(k)}" for k in sorted(row.keys())]
+        lines.append(" | ".join(pieces))
+    y_start = 780
+    y_step = 14
+    content_lines = ["BT", "/F1 10 Tf"]
+    y = y_start
+    for line in lines:
+        safe = str(line).replace("\\", "\\\\").replace("(", "\\(").replace(")", "\\)")
+        content_lines.append(f"50 {max(20, y)} Td ({safe}) Tj")
+        y -= y_step
+    content_lines.append("ET")
+    stream = "\n".join(content_lines).encode("utf-8")
+    objects = [
+        b"1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj",
+        b"2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj",
+        b"3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 4 0 R >> >> /Contents 5 0 R >> endobj",
+        b"4 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj",
+        b"5 0 obj << /Length " + str(len(stream)).encode("ascii") + b" >> stream\n" + stream + b"\nendstream endobj",
+    ]
+    buffer = io.BytesIO()
+    buffer.write(b"%PDF-1.4\n")
+    offsets = [0]
+    for obj in objects:
+        offsets.append(buffer.tell())
+        buffer.write(obj + b"\n")
+    xref_pos = buffer.tell()
+    buffer.write(f"xref\n0 {len(offsets)}\n".encode("ascii"))
+    buffer.write(b"0000000000 65535 f \n")
+    for off in offsets[1:]:
+        buffer.write(f"{off:010d} 00000 n \n".encode("ascii"))
+    buffer.write(
+        (
+            f"trailer << /Size {len(offsets)} /Root 1 0 R >>\n"
+            f"startxref\n{xref_pos}\n%%EOF"
+        ).encode("ascii")
+    )
+    return buffer.getvalue()
+
+
 def _parse_json_bytes(data: bytes) -> list[dict]:
     obj = json.loads(data.decode("utf-8"))
     if isinstance(obj, list):
@@ -105,8 +257,10 @@ async def _read_upload_limited(file: UploadFile, *, max_bytes: int) -> bytes:
 @router.get("/export/{doc_type}")
 def export_docs(
     doc_type: str,
-    fmt: str = Query(default="json", pattern="^(json|csv|xml)$"),
+    fmt: str = Query(default="json", pattern="^(json|csv|xml|xlsx|pdf)$"),
     limit: int = Query(default=1000, ge=1, le=20000),
+    orientation: str = Query(default="portrait", pattern="^(portrait|landscape)$"),
+    scale: int = Query(default=100, ge=50, le=200),
     db: Session = Depends(get_db),
     tenant_id: str = Depends(get_tenant_id),
     _user=Depends(get_current_user),
@@ -132,6 +286,16 @@ def export_docs(
     if fmt == "xml":
         data = _to_xml(doc_type, payload_rows)
         return Response(content=data, media_type="application/xml", headers={"Content-Disposition": f'attachment; filename="{doc_type}.xml"'})
+    if fmt == "xlsx":
+        data = _to_xlsx(payload_rows)
+        return Response(
+            content=data,
+            media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            headers={"Content-Disposition": f'attachment; filename="{doc_type}.xlsx"'},
+        )
+    if fmt == "pdf":
+        data = _to_pdf(title=f"{doc_type} export", rows=payload_rows, orientation=orientation, scale=scale)
+        return Response(content=data, media_type="application/pdf", headers={"Content-Disposition": f'attachment; filename="{doc_type}.pdf"'})
     raise HTTPException(status_code=400, detail="Invalid fmt")
 
 

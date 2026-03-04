@@ -28,6 +28,7 @@ class Permission(str, Enum):
     DOCUMENTS_WRITE = "documents.write"
     DMS_READ = "dms.read"
     DMS_WRITE = "dms.write"
+    DMS_SCHEDULER_READ = "dms.scheduler.read"
     INTEGRATIONS_READ = "integrations.read"
     INTEGRATIONS_WRITE = "integrations.write"
     AUDIT_READ = "audit.read"
@@ -48,6 +49,13 @@ class Permission(str, Enum):
     TENANT_SETTINGS_WRITE = "tenant.settings.write"
     FEATUREFLAGS_WRITE = "featureflags.write"
     THEME_WRITE = "theme.write"
+    COMMS_CUSTOMER_READ = "comms.customer.read"
+    COMMS_CUSTOMER_WRITE = "comms.customer.write"
+    COMMS_FUNDING_WRITE = "comms.funding.write"
+    INVENTORY_SUPPLIES_READ = "inventory.supplies.read"
+    INVENTORY_SUPPLIES_WRITE = "inventory.supplies.write"
+    INVENTORY_PROCUREMENT_READ = "inventory.procurement.read"
+    INVENTORY_PROCUREMENT_WRITE = "inventory.procurement.write"
 
 
 ALL_PERMISSIONS = frozenset(Permission)
@@ -61,8 +69,12 @@ _BASE_READ = frozenset(
         Permission.INVENTORY_READ,
         Permission.DOCUMENTS_READ,
         Permission.DMS_READ,
+        Permission.DMS_SCHEDULER_READ,
         Permission.AUDIT_READ,
         Permission.EVENTSTORE_READ,
+        Permission.COMMS_CUSTOMER_READ,
+        Permission.INVENTORY_SUPPLIES_READ,
+        Permission.INVENTORY_PROCUREMENT_READ,
         Permission.RBAC_READ,
         Permission.PLATFORM_READ,
     }
@@ -76,7 +88,11 @@ _BASE_WRITE = frozenset(
         Permission.INVENTORY_WRITE,
         Permission.DOCUMENTS_WRITE,
         Permission.DMS_WRITE,
+        Permission.COMMS_CUSTOMER_WRITE,
+        Permission.COMMS_FUNDING_WRITE,
         Permission.EVENTSTORE_WRITE,
+        Permission.INVENTORY_SUPPLIES_WRITE,
+        Permission.INVENTORY_PROCUREMENT_WRITE,
     }
 )
 

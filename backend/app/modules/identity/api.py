@@ -12,13 +12,19 @@ from app.modules.identity.schemas import (
     ChangePasswordRequest,
     LoginRequest,
     LogoutRequest,
+    MfaCodeIn,
+    MfaEnrollStartOut,
+    MfaStatusOut,
     PasswordResetConsumeRequest,
     RefreshRequest,
     TokenPair,
 )
 from app.modules.identity.service import (
     authenticate,
+    begin_mfa_enrollment,
     change_password,
+    confirm_mfa_enrollment,
+    disable_mfa,
     issue_token_pair,
     revoke_refresh_token,
     rotate_refresh_token,
@@ -45,7 +51,7 @@ def login(
     _idmp=Depends(idempotency_guard),
 ) -> TokenPair:
     with uow as db:
-        user = authenticate(db, payload.email, payload.password)
+        user = authenticate(db, payload.email, payload.password, payload.otp_code)
         if not user:
             raise AppError(
                 code="auth_invalid_credentials",
@@ -171,3 +177,47 @@ def reset_password(
             user_agent=request.headers.get("User-Agent"),
         )
     return {"ok": True}
+
+
+@router.post("/mfa/enroll/start", response_model=MfaEnrollStartOut)
+def mfa_enroll_start(
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+    _idmp=Depends(idempotency_guard),
+) -> MfaEnrollStartOut:
+    with uow as db:
+        user = db.get(User, current_user.id)
+        if user is None:
+            raise AppError(code="auth_user_not_found", message="User not found", status_code=401)
+        secret, uri = begin_mfa_enrollment(db, user=user)
+        return MfaEnrollStartOut(secret=secret, otpauth_url=uri, mfa_enabled=bool(user.mfa_enabled))
+
+
+@router.post("/mfa/enroll/verify", response_model=MfaStatusOut)
+def mfa_enroll_verify(
+    payload: MfaCodeIn,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+    _idmp=Depends(idempotency_guard),
+) -> MfaStatusOut:
+    with uow as db:
+        user = db.get(User, current_user.id)
+        if user is None:
+            raise AppError(code="auth_user_not_found", message="User not found", status_code=401)
+        confirm_mfa_enrollment(db, user=user, otp_code=payload.otp_code)
+        return MfaStatusOut(ok=True, mfa_enabled=bool(user.mfa_enabled))
+
+
+@router.post("/mfa/disable", response_model=MfaStatusOut)
+def mfa_disable(
+    payload: MfaCodeIn,
+    current_user: User = Depends(get_current_user),
+    uow: UnitOfWork = Depends(get_uow),
+    _idmp=Depends(idempotency_guard),
+) -> MfaStatusOut:
+    with uow as db:
+        user = db.get(User, current_user.id)
+        if user is None:
+            raise AppError(code="auth_user_not_found", message="User not found", status_code=401)
+        disable_mfa(db, user=user, otp_code=payload.otp_code)
+        return MfaStatusOut(ok=True, mfa_enabled=bool(user.mfa_enabled))
