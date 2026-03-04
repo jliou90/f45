@@ -143,6 +143,9 @@ After bootstrap:
 - Application rollback: deploy previous app artifact
 - Database rollback: run alembic downgrade step only if migration is reversible and impact is understood
 - Last-resort rollback: restore database from backup (`docs/BACKUP_RESTORE.md`)
+- Baseline anchor for known-good code state: `v0.1.0-baseline`
+  - `git checkout v0.1.0-baseline`
+  - rebuild/redeploy from that tag when a release rollback is required
 
 ## 9. Clean Host Validation
 

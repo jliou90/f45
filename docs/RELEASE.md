@@ -4,6 +4,9 @@ This document defines patch-level Definition of Done and release steps for KUTM 
 
 Canonical frontend location for release builds is `frontend/`. Legacy `kutm-frontend/` is archived under `attic/` and not built.
 
+Current rollback anchor:
+- `v0.1.0-baseline` (stabilized decomposition baseline)
+
 ## Definition of Done (Patch)
 
 A patch is shippable only when all checks below pass:
@@ -43,6 +46,7 @@ Release evidence that must stay current:
 5. Tag and publish:
    - create git tag `vX.Y.Z`
    - publish release artifact/container image
+   - keep `v0.1.0-baseline` as immutable rollback anchor for early releases
 6. Post-release verification:
    - confirm health/metrics
    - verify auth login/refresh flow
@@ -78,3 +82,6 @@ npm run build
 Notes:
 - `npm run gen:api` is deterministic and reads `frontend/src/api/openapi.json`.
 - Use `npm run gen:api:live` only when you intentionally want to regenerate from a running backend.
+- Emergency rollback to baseline:
+  - `git checkout v0.1.0-baseline`
+  - redeploy artifacts from that tag and restore DB from latest known-good backup if needed.

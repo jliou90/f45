@@ -22,3 +22,4 @@ The format is based on Keep a Changelog and this project follows Semantic Versio
 
 ### Added
 - Initial production-hardening patch series (D.1 - D.8 baseline).
+- Established immutable rollback anchor tag: `v0.1.0-baseline`.
