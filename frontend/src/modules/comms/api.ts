@@ -24,6 +24,25 @@ export type Conversation = {
 
 export type ApprovalDecision = "request" | "approve" | "reject";
 
+export type OutboundCommunication = {
+  id: string;
+  tenant_id: string;
+  entity_type: string;
+  entity_id: string;
+  customer_id?: string | null;
+  deal_id?: string | null;
+  channel: string;
+  to_address: string;
+  subject: string;
+  body: string;
+  status: string;
+  provider_message_id?: string | null;
+  error?: string | null;
+  attachment_id?: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 type ServiceQueueItem = {
   ro_id: string;
   status?: string | null;
@@ -34,6 +53,10 @@ type ServiceQueueItem = {
 
 type ServiceQueuePage = {
   items?: ServiceQueueItem[];
+};
+
+type OutboundPage = {
+  items?: OutboundCommunication[];
 };
 
 type ServiceDoc = {
@@ -129,4 +152,47 @@ export async function postApprovalDecision(
     }
     throw error;
   }
+}
+
+export async function uploadCommsAttachment(file: File): Promise<{ id: string; filename: string; mime_type: string }> {
+  const form = new FormData();
+  form.append("file", file);
+  return kutmApi.post<{ id: string; filename: string; mime_type: string }>("/docs/attachments/upload", form);
+}
+
+export async function sendCustomerEmail(input: {
+  customerId: string;
+  toEmail: string;
+  subject: string;
+  body: string;
+  attachmentId?: string;
+}): Promise<OutboundCommunication> {
+  return kutmApi.post<OutboundCommunication>(`/comms/customers/${encodeURIComponent(input.customerId)}/email`, {
+    to_email: input.toEmail,
+    subject: input.subject,
+    body: input.body,
+    attachment_id: input.attachmentId || null,
+  });
+}
+
+export async function listCustomerEmails(customerId: string): Promise<OutboundCommunication[]> {
+  const response = await kutmApi.get<OutboundPage>(`/comms/customers/${encodeURIComponent(customerId)}`, { page: 1, size: 100 });
+  return response.items ?? [];
+}
+
+export async function sendFundingStip(input: {
+  dealId: string;
+  lenderEmail: string;
+  stipName: string;
+  attachmentId: string;
+  subject?: string;
+  note?: string;
+}): Promise<OutboundCommunication> {
+  return kutmApi.post<OutboundCommunication>(`/comms/funding/${encodeURIComponent(input.dealId)}/stip`, {
+    lender_email: input.lenderEmail,
+    stip_name: input.stipName,
+    attachment_id: input.attachmentId,
+    subject: input.subject || null,
+    note: input.note || null,
+  });
 }

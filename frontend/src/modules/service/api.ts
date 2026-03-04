@@ -16,11 +16,30 @@ type ServiceDoc = {
   updated_at?: string | null;
 };
 
+type TechnicianBusySlot = {
+  appointment_id?: string | null;
+  start?: string | null;
+  end?: string | null;
+};
+
+type TechnicianAvailability = {
+  user_id: string;
+  email: string;
+  busy: TechnicianBusySlot[];
+};
+
 export type ServiceRecord = {
   id: string;
   title: string;
   status: string;
   updatedAt: string;
+};
+
+export type TechnicianAvailabilityRow = {
+  userId: string;
+  email: string;
+  busyCount: number;
+  firstBusyStart: string;
 };
 
 export async function listServiceRecords(): Promise<ServiceRecord[]> {
@@ -67,4 +86,18 @@ export async function appendServiceEvent(args: {
     payload: args.payload ?? {},
   });
   return getServiceRecord(args.roId);
+}
+
+export async function listTechnicianAvailability(day: string): Promise<TechnicianAvailabilityRow[]> {
+  const response = await kutmApi.get<Page<TechnicianAvailability>>("/dms/availability/technicians", {
+    day,
+    page: 1,
+    size: 100,
+  });
+  return (response.items ?? []).map((item) => ({
+    userId: item.user_id,
+    email: item.email,
+    busyCount: item.busy?.length ?? 0,
+    firstBusyStart: item.busy?.[0]?.start || "",
+  }));
 }

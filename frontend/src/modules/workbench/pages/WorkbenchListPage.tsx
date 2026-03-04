@@ -3,10 +3,17 @@ import { Link } from "react-router-dom";
 import { useFeatureFlags } from "../../../app/use-feature-flags";
 import { useToast } from "../../../app/use-toast";
 import {
+  addOrderBatchLine,
+  createOrderBatch,
+  createSupply,
   createWorkbenchItem,
   discoverWorkbenchResource,
   getDiscoveryMessage,
+  listOrderBatches,
+  listSupplies,
   listWorkbenchItems,
+  type OrderBatch,
+  type SupplyItem,
   type WorkbenchItem,
   type WorkbenchResource,
 } from "../api";
@@ -25,6 +32,17 @@ export function WorkbenchListPage() {
   const [vehicleVin, setVehicleVin] = useState("");
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [supplies, setSupplies] = useState<SupplyItem[]>([]);
+  const [batches, setBatches] = useState<OrderBatch[]>([]);
+  const [supplySku, setSupplySku] = useState("");
+  const [supplyName, setSupplyName] = useState("");
+  const [supplyOnHand, setSupplyOnHand] = useState("0");
+  const [supplyReorderPoint, setSupplyReorderPoint] = useState("0");
+  const [supplyReorderQty, setSupplyReorderQty] = useState("0");
+  const [batchName, setBatchName] = useState("");
+  const [batchIdForLine, setBatchIdForLine] = useState("");
+  const [supplyIdForLine, setSupplyIdForLine] = useState("");
+  const [lineQty, setLineQty] = useState("1");
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -46,6 +64,20 @@ export function WorkbenchListPage() {
   useEffect(() => {
     void load();
   }, [load]);
+
+  const loadProcurement = useCallback(async () => {
+    try {
+      const [nextSupplies, nextBatches] = await Promise.all([listSupplies(true), listOrderBatches()]);
+      setSupplies(nextSupplies);
+      setBatches(nextBatches);
+    } catch (nextError) {
+      setError(nextError);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadProcurement();
+  }, [loadProcurement]);
 
   const onCreate = async () => {
     if (customerName.trim().length < 2) {
@@ -75,6 +107,64 @@ export function WorkbenchListPage() {
   };
 
   const discoveryMessage = getDiscoveryMessage();
+
+  const onCreateSupply = async () => {
+    if (!supplySku.trim() || !supplyName.trim()) {
+      toast.pushToast("error", "Supply SKU and name are required.");
+      return;
+    }
+    try {
+      await createSupply({
+        sku: supplySku.trim(),
+        name: supplyName.trim(),
+        on_hand_qty: Number(supplyOnHand || 0),
+        reorder_point: Number(supplyReorderPoint || 0),
+        reorder_qty: Number(supplyReorderQty || 0),
+      });
+      setSupplySku("");
+      setSupplyName("");
+      toast.pushToast("success", "Supply created.");
+      await loadProcurement();
+    } catch (nextError) {
+      setError(nextError);
+      toast.pushToast("error", "Supply create failed.");
+    }
+  };
+
+  const onCreateBatch = async () => {
+    if (!batchName.trim()) {
+      toast.pushToast("error", "Batch name is required.");
+      return;
+    }
+    try {
+      await createOrderBatch({ name: batchName.trim() });
+      setBatchName("");
+      toast.pushToast("success", "Order batch created.");
+      await loadProcurement();
+    } catch (nextError) {
+      setError(nextError);
+      toast.pushToast("error", "Batch create failed.");
+    }
+  };
+
+  const onAddBatchLine = async () => {
+    if (!batchIdForLine.trim() || !supplyIdForLine.trim()) {
+      toast.pushToast("error", "Batch ID and Supply ID are required.");
+      return;
+    }
+    try {
+      await addOrderBatchLine({
+        batchId: batchIdForLine.trim(),
+        supplyItemId: supplyIdForLine.trim(),
+        qty: Math.max(1, Number(lineQty || 1)),
+      });
+      toast.pushToast("success", "Batch line updated.");
+      await loadProcurement();
+    } catch (nextError) {
+      setError(nextError);
+      toast.pushToast("error", "Batch line update failed.");
+    }
+  };
 
   return (
     <div className="stack">
@@ -141,6 +231,76 @@ export function WorkbenchListPage() {
       </div>
 
       {!featureFlags.flags.realtimeEnabled ? <p className="muted">Realtime disabled by feature flags.</p> : null}
+
+      <div className="panel stack">
+        <h2>Supplies & Procurement</h2>
+        <p className="muted">Uses `/api/v1/inventory/supplies` and `/api/v1/inventory/order-batches`.</p>
+        <div className="row">
+          <label>
+            SKU
+            <input value={supplySku} onChange={(event) => setSupplySku(event.target.value)} />
+          </label>
+          <label>
+            Name
+            <input value={supplyName} onChange={(event) => setSupplyName(event.target.value)} />
+          </label>
+          <label>
+            On Hand
+            <input type="number" value={supplyOnHand} onChange={(event) => setSupplyOnHand(event.target.value)} />
+          </label>
+          <label>
+            Reorder Point
+            <input type="number" value={supplyReorderPoint} onChange={(event) => setSupplyReorderPoint(event.target.value)} />
+          </label>
+          <label>
+            Reorder Qty
+            <input type="number" value={supplyReorderQty} onChange={(event) => setSupplyReorderQty(event.target.value)} />
+          </label>
+          <button type="button" onClick={() => void onCreateSupply()}>
+            Add Supply
+          </button>
+        </div>
+        <ul>
+          {supplies.map((supply) => (
+            <li key={supply.id}>
+              {supply.sku} - {supply.name} (on hand {supply.on_hand_qty}, reorder {supply.reorder_point}/{supply.reorder_qty})
+            </li>
+          ))}
+        </ul>
+        <div className="row">
+          <label>
+            Batch Name
+            <input value={batchName} onChange={(event) => setBatchName(event.target.value)} />
+          </label>
+          <button type="button" onClick={() => void onCreateBatch()}>
+            Create Batch
+          </button>
+        </div>
+        <div className="row">
+          <label>
+            Batch ID
+            <input value={batchIdForLine} onChange={(event) => setBatchIdForLine(event.target.value)} />
+          </label>
+          <label>
+            Supply ID
+            <input value={supplyIdForLine} onChange={(event) => setSupplyIdForLine(event.target.value)} />
+          </label>
+          <label>
+            Qty
+            <input type="number" value={lineQty} onChange={(event) => setLineQty(event.target.value)} />
+          </label>
+          <button type="button" onClick={() => void onAddBatchLine()}>
+            Add/Update Batch Line
+          </button>
+        </div>
+        <ul>
+          {batches.map((batch) => (
+            <li key={batch.id}>
+              {batch.name} ({batch.status}) - {batch.lines.length} lines
+            </li>
+          ))}
+        </ul>
+      </div>
     </div>
   );
 }

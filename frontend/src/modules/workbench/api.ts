@@ -17,6 +17,42 @@ export type WorkbenchItem = {
   [key: string]: unknown;
 };
 
+export type SupplyItem = {
+  id: string;
+  sku: string;
+  name: string;
+  on_hand_qty: number;
+  reorder_point: number;
+  reorder_qty: number;
+  unit: string;
+  vendor?: string | null;
+  low_stock: boolean;
+};
+
+type SupplyPage = {
+  items?: SupplyItem[];
+};
+
+export type OrderBatchLine = {
+  id: string;
+  supply_item_id: string;
+  supply_sku: string;
+  supply_name: string;
+  qty: number;
+};
+
+export type OrderBatch = {
+  id: string;
+  name: string;
+  status: string;
+  notes?: string | null;
+  lines: OrderBatchLine[];
+};
+
+type OrderBatchPage = {
+  items?: OrderBatch[];
+};
+
 const FALLBACK_RESOURCE: WorkbenchResource = {
   name: "appointments",
   listPath: "/dms/appointments",
@@ -212,4 +248,44 @@ export async function deleteWorkbenchItem(id: string): Promise<{ request_id?: st
     }
     throw error;
   }
+}
+
+export async function listSupplies(lowOnly = false): Promise<SupplyItem[]> {
+  const response = await kutmApi.get<SupplyPage>("/inventory/supplies", {
+    page: 1,
+    size: 100,
+    low_only: lowOnly ? "true" : undefined,
+  });
+  return response.items ?? [];
+}
+
+export async function createSupply(input: {
+  sku: string;
+  name: string;
+  on_hand_qty: number;
+  reorder_point: number;
+  reorder_qty: number;
+  unit?: string;
+  vendor?: string;
+}): Promise<SupplyItem> {
+  return kutmApi.post<SupplyItem>("/inventory/supplies", input);
+}
+
+export async function listOrderBatches(): Promise<OrderBatch[]> {
+  const response = await kutmApi.get<OrderBatchPage>("/inventory/order-batches", { page: 1, size: 100 });
+  return response.items ?? [];
+}
+
+export async function createOrderBatch(input: { name: string; notes?: string }): Promise<OrderBatch> {
+  return kutmApi.post<OrderBatch>("/inventory/order-batches", {
+    name: input.name,
+    notes: input.notes || null,
+  });
+}
+
+export async function addOrderBatchLine(input: { batchId: string; supplyItemId: string; qty: number }): Promise<OrderBatch> {
+  return kutmApi.put<OrderBatch>(`/inventory/order-batches/${encodeURIComponent(input.batchId)}/lines`, {
+    supply_item_id: input.supplyItemId,
+    qty: input.qty,
+  });
 }
