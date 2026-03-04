@@ -5,6 +5,7 @@ from app.core.errors import AppError
 from app.core.idempotency import idempotency_guard
 from app.core.uow import UnitOfWork
 from app.db.session import get_uow
+from app.modules.admin import service as admin_service
 from app.modules.identity.models import User
 from app.modules.identity.schemas import (
     AcceptInviteRequest,
@@ -15,7 +16,6 @@ from app.modules.identity.schemas import (
     RefreshRequest,
     TokenPair,
 )
-from app.modules.admin import service as admin_service
 from app.modules.identity.service import (
     authenticate,
     change_password,

@@ -20,7 +20,6 @@ from app.db.session import get_db, get_uow
 from app.modules.audit.service import log_audit_event
 from app.modules.dms.appointments_rules import check_vehicle_overlap, default_end, validate_times
 from app.modules.dms.models import Appointment, Customer, Vehicle
-from app.modules.eventstore.service import append_event
 from app.modules.dms.schemas import (
     AppointmentCreate,
     AppointmentOut,
@@ -35,6 +34,7 @@ from app.modules.dms.schemas import (
     VehiclePatch,
     VehicleUpdate,
 )
+from app.modules.eventstore.service import append_event
 from app.modules.tenancy.deps import get_tenant_id
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from pydantic import BaseModel, Field

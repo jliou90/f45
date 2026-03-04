@@ -7,6 +7,7 @@ from uuid import uuid4
 from app.core.auth.deps import get_current_user
 from app.db.session import get_db
 from app.main import app
+from app.modules.admin import service as admin_service
 from app.modules.admin.models import (
     FeatureFlag,
     InviteToken,
@@ -16,7 +17,6 @@ from app.modules.admin.models import (
     TenantProfile,
     UserFeatureOverride,
 )
-from app.modules.admin import service as admin_service
 from app.modules.audit.models import AuditEvent
 from app.modules.identity.models import RefreshToken, User
 from app.modules.rbac.models import PermissionGrant, Role, RolePermission

@@ -17,8 +17,8 @@ from app.modules.admin.schemas import (
     FeatureFlagCatalogOut,
     FeatureFlagsEffectiveOut,
     FeatureOverrideDeleteOut,
-    FeatureOverrideUpsertIn,
     FeatureOverridesOut,
+    FeatureOverrideUpsertIn,
     InviteCreateIn,
     InviteCreateOut,
     InviteRevokeOut,
@@ -28,8 +28,8 @@ from app.modules.admin.schemas import (
     RoleCreateIn,
     RoleDeleteOut,
     RoleDetailOut,
-    RoleUpdateIn,
     RolesListOut,
+    RoleUpdateIn,
     SessionRevokeOut,
     SessionsListOut,
     TenantLogoIn,
@@ -41,8 +41,8 @@ from app.modules.admin.schemas import (
     UserDetailOut,
     UserDisableOut,
     UserRoleUpdateIn,
-    UserUpdateIn,
     UsersListOut,
+    UserUpdateIn,
 )
 from app.modules.identity.models import User
 from app.modules.tenancy.deps import get_tenant_id

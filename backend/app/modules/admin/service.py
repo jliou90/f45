@@ -25,6 +25,8 @@ from app.modules.audit.service import log_audit_event
 from app.modules.identity.models import RefreshToken, User
 from app.modules.identity.service import (
     disable_user as disable_user_tokens,
+)
+from app.modules.identity.service import (
     revoke_all_refresh_tokens_for_user,
 )
 from app.modules.rbac.models import PermissionGrant, Role, RolePermission
@@ -328,9 +330,8 @@ def update_role(
         db.add(RolePermission(role_id=role.id, permission_key=key))
     db.flush()
     affected_user_ids = {row[0] for row in db.query(Membership.user_id).filter(Membership.tenant_id == tenant_id, Membership.role_id == role.id).all()}
-    if ADMIN_USERS_WRITE not in permission_keys and affected_user_ids:
-        if not (_admin_capable_user_ids(db, tenant_id=tenant_id) - affected_user_ids):
-            raise validation_error("Cannot remove last admin-equivalent from tenant", code="last_admin_protection")
+    if ADMIN_USERS_WRITE not in permission_keys and affected_user_ids and not (_admin_capable_user_ids(db, tenant_id=tenant_id) - affected_user_ids):
+        raise validation_error("Cannot remove last admin-equivalent from tenant", code="last_admin_protection")
     log_audit_event(
         db=db,
         tenant_id=tenant_id,
@@ -520,9 +521,8 @@ def update_user(
     if display_name is not None:
         user.display_name = display_name
     if is_active is not None:
-        if not is_active and user_id in _admin_capable_user_ids(db, tenant_id=tenant_id):
-            if not (_admin_capable_user_ids(db, tenant_id=tenant_id) - {user_id}):
-                raise validation_error("Cannot remove last admin-equivalent from tenant", code="last_admin_protection")
+        if not is_active and user_id in _admin_capable_user_ids(db, tenant_id=tenant_id) and not (_admin_capable_user_ids(db, tenant_id=tenant_id) - {user_id}):
+            raise validation_error("Cannot remove last admin-equivalent from tenant", code="last_admin_protection")
         user.is_active = is_active
         user.is_disabled = not is_active
     user.updated_at = _utcnow()
@@ -562,9 +562,8 @@ def change_user_role(
     target_after_permissions = {row[0] for row in db.query(RolePermission.permission_key).filter(RolePermission.role_id == role.id).all()}
     if user_id == actor_user_id and ADMIN_ROLES_WRITE not in actor_permissions and target_after_permissions != target_before_permissions:
         raise AppError(code="self_escalation_blocked", message="Cannot change your own role permissions without admin.roles.write", status_code=403)
-    if user_id in _admin_capable_user_ids(db, tenant_id=tenant_id) and ADMIN_USERS_WRITE not in target_after_permissions:
-        if not (_admin_capable_user_ids(db, tenant_id=tenant_id) - {user_id}):
-            raise validation_error("Cannot remove last admin-equivalent from tenant", code="last_admin_protection")
+    if user_id in _admin_capable_user_ids(db, tenant_id=tenant_id) and ADMIN_USERS_WRITE not in target_after_permissions and not (_admin_capable_user_ids(db, tenant_id=tenant_id) - {user_id}):
+        raise validation_error("Cannot remove last admin-equivalent from tenant", code="last_admin_protection")
     before = {"role_id": membership.role_id, "role_name": membership.role}
     membership.role_id = role.id
     membership.role = role.name

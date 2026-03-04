@@ -4,8 +4,8 @@ import json
 import logging
 import os
 import sys
-from datetime import UTC, datetime
 from collections import deque
+from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
 
 from app.core.request_id import get_request_id

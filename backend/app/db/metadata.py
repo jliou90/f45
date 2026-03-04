@@ -10,9 +10,6 @@ from app.modules.accounting.models import (  # noqa: F401
     AcctPostingLock,
     AcctReversalLink,
 )
-
-# Platform audit
-from app.modules.audit.models import AuditEvent, AuditLog  # noqa: F401
 from app.modules.admin.models import (  # noqa: F401
     FeatureFlag,
     InviteToken,
@@ -22,6 +19,9 @@ from app.modules.admin.models import (  # noqa: F401
     TenantProfile,
     UserFeatureOverride,
 )
+
+# Platform audit
+from app.modules.audit.models import AuditEvent, AuditLog  # noqa: F401
 from app.modules.dms.models import Appointment, Customer, Vehicle  # noqa: F401
 from app.modules.documents.models import (  # noqa: F401
     Document,

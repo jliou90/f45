@@ -144,7 +144,7 @@ def _resolve_granted_permissions(
     role: str,
 ) -> set[str]:
     preset = getattr(request.state, "tenant_permissions", None)
-    if isinstance(preset, (list, tuple, set)) and preset:
+    if isinstance(preset, list | tuple | set) and preset:
         return {str(p) for p in preset}
     try:
         return _membership_permissions(

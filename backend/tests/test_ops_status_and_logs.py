@@ -5,9 +5,9 @@ from uuid import uuid4
 from app.core.security import hash_password
 from app.db.session import SessionLocal
 from app.main import create_app
+from app.modules.identity.models import User
 from app.modules.tenancy import service as tenancy_service
 from app.modules.tenancy.models import Tenant
-from app.modules.identity.models import User
 from fastapi.testclient import TestClient
 
 

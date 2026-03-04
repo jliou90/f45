@@ -4,7 +4,6 @@ from datetime import datetime
 from uuid import uuid4
 
 from app.db.base import Base
-import sqlalchemy as sa
 from sqlalchemy import DateTime, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
