@@ -1,0 +1,282 @@
+// ============================================================================
+// PARTS DOMAIN MODELS
+// ============================================================================
+
+/// Part (Inventory Item)
+model Part {
+  id             String   @id @default(uuid())
+  organizationId String
+  
+  // Identification
+  partNumber     String   // Manufacturer part number
+  sku            String?  // Internal SKU
+  barcode        String?  @unique
+  
+  // Details
+  description    String
+  category       String?  // 'engine' | 'brakes' | 'electrical' | 'body' | etc.
+  subcategory    String?
+  
+  // Manufacturer
+  manufacturer   String?
+  brand          String?
+  
+  // Compatibility (JSON array of make/model/year)
+  fitment        Json?
+  
+  // Physical attributes
+  weight         Decimal? @db.Decimal(10, 3) // pounds
+  dimensions     Json?    // { length, width, height }
+  
+  // Inventory
+  quantityOnHand Int      @default(0)
+  quantityReserved Int    @default(0) // Reserved for work orders
+  quantityAvailable Int   @default(0) // On hand - reserved
+  reorderPoint   Int      @default(0)
+  reorderQuantity Int     @default(0)
+  
+  // Location
+  location       String?  // Bin/shelf location
+  locationCode   String?
+  
+  // Pricing
+  cost           Decimal  @db.Decimal(10, 2) // What we pay
+  listPrice      Decimal  @db.Decimal(10, 2) // MSRP
+  retailPrice    Decimal  @db.Decimal(10, 2) // What we charge
+  
+  // Core charges
+  hasCore        Boolean  @default(false)
+  coreCharge     Decimal? @db.Decimal(10, 2)
+  
+  // Tax
+  isTaxable      Boolean  @default(true)
+  
+  // Vendor
+  preferredVendorId String?
+  
+  // Status
+  isActive       Boolean  @default(true)
+  isDiscontinued Boolean  @default(false)
+  
+  // Images
+  imageUrl       String?
+  images         Json?    // Array of image URLs
+  
+  // Metadata
+  notes          String?  @db.Text
+  customFields   Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization       @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  preferredVendor Vendor?           @relation(fields: [preferredVendorId], references: [id])
+  transactions   PartTransaction[]
+  workOrderItems WorkOrderItem[]
+  quoteItems     QuoteItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  
+  @@map("parts")
+  @@index([organizationId])
+  @@index([partNumber])
+  @@index([sku])
+  @@index([barcode])
+  @@index([category])
+  @@unique([organizationId, partNumber])
+}
+
+/// Part Transaction (Inventory movement tracking)
+model PartTransaction {
+  id             String   @id @default(uuid())
+  partId         String
+  organizationId String
+  
+  // Transaction details
+  type           String   // 'purchase' | 'sale' | 'adjustment' | 'transfer' | 'return'
+  quantity       Int      // Positive or negative
+  
+  // Before/after quantities
+  quantityBefore Int
+  quantityAfter  Int
+  
+  // Pricing at time of transaction
+  unitCost       Decimal? @db.Decimal(10, 2)
+  unitPrice      Decimal? @db.Decimal(10, 2)
+  totalCost      Decimal? @db.Decimal(10, 2)
+  totalPrice     Decimal? @db.Decimal(10, 2)
+  
+  // Reference
+  referenceType  String?  // 'purchase_order' | 'work_order' | 'adjustment' | etc.
+  referenceId    String?  // ID of related record
+  
+  // Location
+  locationFrom   String?
+  locationTo     String?
+  
+  // Reason (for adjustments)
+  reason         String?
+  notes          String?  @db.Text
+  
+  // Who performed transaction
+  performedById  String?
+  
+  // Metadata
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  
+  // Relations
+  part           Part         @relation(fields: [partId], references: [id], onDelete: Cascade)
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  
+  @@map("part_transactions")
+  @@index([partId])
+  @@index([organizationId])
+  @@index([type])
+  @@index([createdAt])
+  @@index([referenceType, referenceId])
+}
+
+/// Vendor (Parts suppliers)
+model Vendor {
+  id             String   @id @default(uuid())
+  organizationId String
+  
+  // Basic info
+  name           String
+  code           String?  // Vendor code
+  
+  // Contact
+  contactName    String?
+  email          String?
+  phone          String?
+  fax            String?
+  website        String?
+  
+  // Address
+  address1       String?
+  address2       String?
+  city           String?
+  state          String?
+  zip            String?
+  country        String?  @default("US")
+  
+  // Business info
+  taxId          String?
+  accountNumber  String?  // Our account number with them
+  
+  // Terms
+  paymentTerms   String?  // 'net30' | 'net60' | 'cod' | etc.
+  shippingTerms  String?
+  
+  // Performance
+  rating         Decimal? @db.Decimal(3, 2) // 0.00 to 5.00
+  
+  // Status
+  isActive       Boolean  @default(true)
+  isPreferred    Boolean  @default(false)
+  
+  // Metadata
+  notes          String?  @db.Text
+  customFields   Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  parts          Part[]
+  purchaseOrders PurchaseOrder[]
+  
+  @@map("vendors")
+  @@index([organizationId])
+  @@index([name])
+}
+
+/// Purchase Order
+model PurchaseOrder {
+  id             String   @id @default(uuid())
+  organizationId String
+  vendorId       String
+  
+  // PO Number
+  poNumber       String   @unique // PO-2024-0001
+  
+  // Dates
+  orderDate      DateTime @default(now())
+  expectedDate   DateTime?
+  receivedDate   DateTime?
+  
+  // Status
+  status         String   @default("draft") // 'draft' | 'sent' | 'confirmed' | 'partial' | 'received' | 'cancelled'
+  
+  // Shipping
+  shippingMethod String?
+  trackingNumber String?
+  shippingCost   Decimal? @db.Decimal(10, 2)
+  
+  // Financials
+  subtotal       Decimal  @default(0) @db.Decimal(10, 2)
+  tax            Decimal  @default(0) @db.Decimal(10, 2)
+  shipping       Decimal  @default(0) @db.Decimal(10, 2)
+  total          Decimal  @default(0) @db.Decimal(10, 2)
+  
+  // Payment
+  isPaid         Boolean  @default(false)
+  paidAt         DateTime?
+  paymentMethod  String?
+  
+  // Metadata
+  notes          String?  @db.Text
+  internalNotes  String?  @db.Text
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  vendor         Vendor              @relation(fields: [vendorId], references: [id])
+  items          PurchaseOrderItem[]
+  
+  @@map("purchase_orders")
+  @@index([organizationId])
+  @@index([vendorId])
+  @@index([poNumber])
+  @@index([status])
+  @@index([orderDate])
+}
+
+/// Purchase Order Item
+model PurchaseOrderItem {
+  id              String  @id @default(uuid())
+  purchaseOrderId String
+  partId          String
+  
+  // Order details
+  partNumber      String
+  description     String
+  
+  // Quantities
+  quantityOrdered Int
+  quantityReceived Int    @default(0)
+  quantityBackordered Int @default(0)
+  
+  // Pricing
+  unitCost        Decimal @db.Decimal(10, 2)
+  total           Decimal @db.Decimal(10, 2)
+  
+  // Status
+  isReceived      Boolean @default(false)
+  receivedAt      DateTime?
+  
+  // Metadata
+  notes           String? @db.Text
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Relations
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  part            Part          @relation(fields: [partId], references: [id])
+  
+  @@map("purchase_order_items")
+  @@index([purchaseOrderId])
+  @@index([partId])
+}

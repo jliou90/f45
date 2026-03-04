@@ -1,0 +1,302 @@
+// ============================================================================
+// SERVICE DOMAIN MODELS
+// ============================================================================
+
+/// Appointment (Service Scheduling)
+model Appointment {
+  id             String   @id @default(uuid())
+  organizationId String
+  locationId     String
+  customerId     String
+  vehicleId      String
+  
+  // Assignment
+  createdById    String   // Service advisor who created it
+  assignedToId   String?  // Technician assigned
+  
+  // Scheduling
+  appointmentDate DateTime
+  startTime      DateTime
+  endTime        DateTime
+  duration       Int      // minutes
+  
+  // Details
+  serviceType    String   // 'maintenance' | 'repair' | 'inspection' | 'diagnostic'
+  description    String?  @db.Text
+  notes          String?  @db.Text
+  
+  // Status
+  status         String   @default("scheduled") // 'scheduled' | 'confirmed' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
+  
+  // Confirmation
+  isConfirmed    Boolean  @default(false)
+  confirmedAt    DateTime?
+  confirmMethod  String?  // 'email' | 'sms' | 'phone'
+  
+  // Reminders
+  reminderSent   Boolean  @default(false)
+  reminderSentAt DateTime?
+  
+  // Bay assignment
+  bayNumber      String?
+  
+  // Estimated costs
+  estimatedCost  Decimal? @db.Decimal(10, 2)
+  estimatedTime  Int?     // minutes
+  
+  // Metadata
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location       Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  customer       Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle        Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  createdBy      User         @relation("CreatedByUser", fields: [createdById], references: [id])
+  assignedTo     User?        @relation("AssignedToTech", fields: [assignedToId], references: [id])
+  workOrder      WorkOrder?   // One-to-one relationship
+  
+  @@map("appointments")
+  @@index([organizationId])
+  @@index([locationId])
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@index([assignedToId])
+}
+
+/// Work Order (Repair Order / RO)
+model WorkOrder {
+  id             String   @id @default(uuid())
+  organizationId String
+  locationId     String
+  customerId     String
+  vehicleId      String
+  appointmentId  String?  @unique // Optional link to appointment
+  
+  // RO Number
+  roNumber       String   @unique // WO-2024-0001
+  
+  // Assignment
+  createdById    String
+  assignedToId   String?  // Primary technician
+  
+  // Dates
+  startedAt      DateTime?
+  completedAt    DateTime?
+  promisedDate   DateTime?
+  
+  // Vehicle info at time of service
+  mileageIn      Int?
+  mileageOut     Int?
+  
+  // Customer concerns
+  concerns       String?  @db.Text
+  
+  // Technician notes
+  diagnosis      String?  @db.Text
+  workPerformed  String?  @db.Text
+  recommendations String? @db.Text
+  
+  // Status
+  status         String   @default("open") // 'open' | 'in_progress' | 'waiting_parts' | 'waiting_approval' | 'completed' | 'invoiced' | 'paid' | 'cancelled'
+  
+  // Financials
+  subtotal       Decimal  @default(0) @db.Decimal(10, 2)
+  tax            Decimal  @default(0) @db.Decimal(10, 2)
+  discount       Decimal  @default(0) @db.Decimal(10, 2)
+  total          Decimal  @default(0) @db.Decimal(10, 2)
+  
+  // Payment
+  isPaid         Boolean  @default(false)
+  paidAt         DateTime?
+  paymentMethod  String?  // 'cash' | 'credit' | 'check' | 'insurance'
+  
+  // Approval
+  requiresApproval Boolean @default(false)
+  isApproved     Boolean  @default(false)
+  approvedAt     DateTime?
+  approvedBy     String?  // Customer name/signature
+  
+  // Metadata
+  internalNotes  String?  @db.Text
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization    @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  location       Location        @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  customer       Customer        @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle        Vehicle         @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  appointment    Appointment?    @relation(fields: [appointmentId], references: [id])
+  createdBy      User            @relation("CreatedByUser", fields: [createdById], references: [id])
+  assignedTo     User?           @relation("AssignedToTech", fields: [assignedToId], references: [id])
+  items          WorkOrderItem[]
+  
+  @@map("work_orders")
+  @@index([organizationId])
+  @@index([locationId])
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([roNumber])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// Work Order Item (Line items: labor, parts, sublet, fees)
+model WorkOrderItem {
+  id           String  @id @default(uuid())
+  workOrderId  String
+  
+  // Item details
+  type         String  // 'labor' | 'part' | 'sublet' | 'fee' | 'discount'
+  description  String
+  
+  // Part reference (if type = 'part')
+  partId       String?
+  partNumber   String?
+  
+  // Quantity & pricing
+  quantity     Decimal @db.Decimal(10, 3)
+  unitPrice    Decimal @db.Decimal(10, 2)
+  total        Decimal @db.Decimal(10, 2)
+  
+  // Labor specifics
+  laborRate    Decimal? @db.Decimal(10, 2)
+  laborHours   Decimal? @db.Decimal(5, 2)
+  
+  // Tax
+  isTaxable    Boolean @default(true)
+  taxAmount    Decimal @default(0) @db.Decimal(10, 2)
+  
+  // Discounts
+  discountPercent Decimal? @db.Decimal(5, 2)
+  discountAmount  Decimal? @db.Decimal(10, 2)
+  
+  // Status
+  isApproved   Boolean @default(false)
+  
+  // Metadata
+  notes        String? @db.Text
+  metadata     Json?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  workOrder    WorkOrder @relation(fields: [workOrderId], references: [id], onDelete: Cascade)
+  part         Part?     @relation(fields: [partId], references: [id])
+  
+  @@map("work_order_items")
+  @@index([workOrderId])
+  @@index([partId])
+  @@index([type])
+}
+
+/// Quote (Estimate)
+model Quote {
+  id             String   @id @default(uuid())
+  organizationId String
+  customerId     String
+  vehicleId      String
+  
+  // Quote number
+  quoteNumber    String   @unique // Q-2024-0001
+  
+  // Details
+  title          String?
+  description    String?  @db.Text
+  
+  // Validity
+  validUntil     DateTime?
+  
+  // Status
+  status         String   @default("draft") // 'draft' | 'sent' | 'viewed' | 'approved' | 'declined' | 'expired' | 'converted'
+  
+  // Approval
+  isApproved     Boolean  @default(false)
+  approvedAt     DateTime?
+  approvedBy     String?
+  declinedAt     DateTime?
+  declineReason  String?
+  
+  // Conversion
+  convertedToWorkOrderId String?
+  convertedAt    DateTime?
+  
+  // Financials
+  subtotal       Decimal  @default(0) @db.Decimal(10, 2)
+  tax            Decimal  @default(0) @db.Decimal(10, 2)
+  discount       Decimal  @default(0) @db.Decimal(10, 2)
+  total          Decimal  @default(0) @db.Decimal(10, 2)
+  
+  // Communication
+  sentAt         DateTime?
+  viewedAt       DateTime?
+  
+  // Metadata
+  notes          String?  @db.Text
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+  
+  // Relations
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  customer       Customer     @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  vehicle        Vehicle      @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  items          QuoteItem[]
+  
+  @@map("quotes")
+  @@index([organizationId])
+  @@index([customerId])
+  @@index([vehicleId])
+  @@index([quoteNumber])
+  @@index([status])
+  @@index([createdAt])
+}
+
+/// Quote Item
+model QuoteItem {
+  id           String  @id @default(uuid())
+  quoteId      String
+  
+  // Item details
+  type         String  // 'labor' | 'part' | 'sublet' | 'fee'
+  description  String
+  
+  // Part reference
+  partId       String?
+  partNumber   String?
+  
+  // Quantity & pricing
+  quantity     Decimal @db.Decimal(10, 3)
+  unitPrice    Decimal @db.Decimal(10, 2)
+  total        Decimal @db.Decimal(10, 2)
+  
+  // Labor specifics
+  laborRate    Decimal? @db.Decimal(10, 2)
+  laborHours   Decimal? @db.Decimal(5, 2)
+  
+  // Tax
+  isTaxable    Boolean @default(true)
+  taxAmount    Decimal @default(0) @db.Decimal(10, 2)
+  
+  // Customer approval
+  isApproved   Boolean @default(false)
+  
+  // Metadata
+  notes        String? @db.Text
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Relations
+  quote        Quote   @relation(fields: [quoteId], references: [id], onDelete: Cascade)
+  part         Part?   @relation(fields: [partId], references: [id])
+  
+  @@map("quote_items")
+  @@index([quoteId])
+  @@index([partId])
+}
