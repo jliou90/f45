@@ -125,7 +125,6 @@ export const OPENAPI_ENDPOINTS: OpenApiEndpoint[] = [
   { path: "/api/v1/ops/bootstrap", method: "POST" },
   { path: "/api/v1/ops/diag", method: "GET" },
   { path: "/api/v1/ops/diagnostics", method: "GET" },
-  { path: "/api/v1/ops/events", method: "GET" },
   { path: "/api/v1/ops/feature-flags", method: "GET" },
   { path: "/api/v1/ops/health", method: "GET" },
   { path: "/api/v1/ops/logs/tail", method: "GET" },
