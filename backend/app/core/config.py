@@ -1,6 +1,7 @@
 import os
 from enum import Enum
 from pathlib import Path
+from typing import ClassVar
 from urllib.parse import urlparse
 
 from pydantic import Field
@@ -30,12 +31,38 @@ def _normalize_env(value: str | AppEnv | None) -> AppEnv:
 
 
 class Settings(BaseSettings):
+    _NAME_TO_ALIAS: ClassVar[dict[str, str]] = {
+        "app_name": "APP_NAME",
+        "env": "ENV",
+        "jwt_secret": "JWT_SECRET",
+        "jwt_alg": "JWT_ALG",
+        "access_token_minutes": "ACCESS_TOKEN_MINUTES",
+        "refresh_token_days": "REFRESH_TOKEN_DAYS",
+        "login_lockout_enabled": "LOGIN_LOCKOUT_ENABLED",
+        "login_lockout_threshold": "LOGIN_LOCKOUT_THRESHOLD",
+        "login_lockout_minutes": "LOGIN_LOCKOUT_MINUTES",
+        "bootstrap_token": "BOOTSTRAP_TOKEN",
+        "bootstrap_enabled": "BOOTSTRAP_ENABLED",
+        "database_url": "DATABASE_URL",
+        "db_host": "DB_HOST",
+        "db_port": "DB_PORT",
+        "db_name": "DB_NAME",
+        "db_user": "DB_USER",
+        "db_password": "DB_PASSWORD",
+    }
+
     model_config = SettingsConfigDict(
         env_file=str(_ENV_FILE),
         env_file_encoding="utf-8",
         populate_by_name=True,
         validate_by_name=True,
     )
+
+    def __init__(self, **values):
+        for name, alias in Settings._NAME_TO_ALIAS.items():
+            if name in values and alias not in values:
+                values[alias] = values.pop(name)
+        super().__init__(**values)
 
     # App
     app_name: str = Field(default="KingUnderTheMountain", alias="APP_NAME")
