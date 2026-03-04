@@ -1,0 +1,68 @@
+# Environment and secrets
+.env
+.env.*
+!.env.example
+secrets/
+secrets/tls/
+
+# Python virtualenv and caches
+.venv/
+**/.venv/
+backend/.venv/
+__pycache__/
+**/__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Node artifacts
+node_modules/
+**/node_modules/
+frontend/node_modules/
+dist/
+build/
+coverage/
+.turbo/
+.vite/
+
+# Release/local artifact directories
+release_out/
+artifacts/
+logs/
+backups/
+backend/logs/
+KUTM/
+C:/KUTM/
+
+# Backup and patch scratch files
+*.bak*
+*.bak
+*.bak.patch*
+*.bak.*
+*_patch*.diff
+backend/_patch*.diff
+_merge_backup_patch4_*/
+_hardening_backup_*/
+backend/app/_legacy_middleware_patch*/
+
+# Repo-local helper outputs
+backend/.mypy_audit.txt
+backend/.ruff_audit.txt
+backend/_use_py312.ps1
+backend/_phase3_*.py
+backend/Set-ExecutionPolicy
+backend/tools/*_report.txt
+backend/tools/paged_everywhere_scan.py
+backend/tools/patch*_apply.py
+backend/tools/patch*_queue_*.py
+
+# OS / editors
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/

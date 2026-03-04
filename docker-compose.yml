@@ -1,0 +1,137 @@
+﻿services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: kutm_postgres
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-kutm}
+      POSTGRES_USER: ${POSTGRES_USER:-kutm}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-password}
+    volumes:
+      - kutm_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-kutm} -d ${POSTGRES_DB:-kutm}"]
+      interval: 3s
+      timeout: 5s
+      retries: 30
+    restart: unless-stopped
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kutm_api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      APP_ENV: ${APP_ENV:-dev}
+      ENV: ${ENV:-dev}
+      APP_NAME: ${APP_NAME:-KingUnderTheMountain}
+      JWT_SECRET: ${JWT_SECRET:-dev_change_me}
+      JWT_ALG: ${JWT_ALG:-HS256}
+      ACCESS_TOKEN_MINUTES: ${ACCESS_TOKEN_MINUTES:-15}
+      REFRESH_TOKEN_DAYS: ${REFRESH_TOKEN_DAYS:-30}
+      LOGIN_LOCKOUT_ENABLED: ${LOGIN_LOCKOUT_ENABLED:-0}
+      LOGIN_LOCKOUT_THRESHOLD: ${LOGIN_LOCKOUT_THRESHOLD:-5}
+      LOGIN_LOCKOUT_MINUTES: ${LOGIN_LOCKOUT_MINUTES:-15}
+      BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:-}
+      UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,kutm.local}
+      DB_HOST: postgres
+      DB_PORT: 5432
+      DB_NAME: ${POSTGRES_DB:-kutm}
+      DB_USER: ${POSTGRES_USER:-kutm}
+      DB_PASSWORD: ${POSTGRES_PASSWORD:-password}
+      KUTM_SEED_TENANT: ${KUTM_SEED_TENANT:-}
+      KUTM_SEED_EMAIL: ${KUTM_SEED_EMAIL:-}
+      KUTM_SEED_PASSWORD: ${KUTM_SEED_PASSWORD:-}
+      KUTM_SEED_FORCE_PASSWORD: ${KUTM_SEED_FORCE_PASSWORD:-false}
+    expose:
+      - "8010"
+    ports:
+      - "8010:8010"
+    command: >
+      sh -c "python -m alembic upgrade head &&
+             if [ -n \"$$KUTM_SEED_EMAIL\" ] && [ -n \"$$KUTM_SEED_PASSWORD\" ] && [ -n \"$$KUTM_SEED_TENANT\" ]; then
+               python seed_admin.py;
+             else
+               echo 'Skipping seed_admin.py (set KUTM_SEED_EMAIL/KUTM_SEED_PASSWORD/KUTM_SEED_TENANT to enable)';
+             fi &&
+             python -m uvicorn app.main:app --host 0.0.0.0 --port 8010 --workers ${UVICORN_WORKERS:-4}"
+    healthcheck:
+      test: ["CMD-SHELL", "python -c \"import urllib.request,sys; r=urllib.request.urlopen('http://127.0.0.1:8010/readyz', timeout=3); sys.exit(0 if r.getcode()==200 else 1)\""]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: frontend/Dockerfile
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-/api/v1}
+    container_name: kutm_web
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "${WEB_HTTPS_PORT:-443}:443"
+      - "${WEB_HTTP_PORT:-80}:80"
+    volumes:
+      - ${TLS_CERT_FILE:-./secrets/tls/kutm.local+3.pem}:/etc/nginx/tls/tls.crt:ro
+      - ${TLS_KEY_FILE:-./secrets/tls/kutm.local+3-key.pem}:/etc/nginx/tls/tls.key:ro
+    healthcheck:
+      test: ["CMD-SHELL", "wget --no-check-certificate --no-verbose --tries=1 --spider https://127.0.0.1/readyz || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+    restart: unless-stopped
+
+  supervisor:
+    build:
+      context: .
+      dockerfile: supervisor/Dockerfile
+    container_name: kutm_supervisor
+    depends_on:
+      postgres:
+        condition: service_started
+      api:
+        condition: service_started
+    ports:
+      - "127.0.0.1:7331:7331"
+    environment:
+      KUTM_BACKUPS_DIR: /var/kutm/backups
+      KUTM_SUPPORT_DIR: /var/kutm/support
+      KUTM_BACKUPS_HOST_DIR: "C:\\KUTM\\Backups"
+      KUTM_SUPPORT_HOST_DIR: "C:\\KUTM\\Support"
+      KUTM_VERSION_FILE: /app/VERSION
+      KUTM_SELF_HEAL_INTERVAL_SECONDS: 15
+      KUTM_SELF_HEAL_THRESHOLD: 3
+      KUTM_SELF_HEAL_WINDOW_SECONDS: 600
+      KUTM_BACKUP_SCHEDULE_ENABLED: ${KUTM_BACKUP_SCHEDULE_ENABLED:-0}
+      KUTM_BACKUP_SCHEDULE_INTERVAL_MINUTES: ${KUTM_BACKUP_SCHEDULE_INTERVAL_MINUTES:-1440}
+      KUTM_BACKUP_RETENTION_COUNT: ${KUTM_BACKUP_RETENTION_COUNT:-14}
+      KUTM_RESTORE_CONFIRM_PHRASE: ${KUTM_RESTORE_CONFIRM_PHRASE:-RESTORE_KUTM}
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - C:/KUTM/Backups:/var/kutm/backups
+      - C:/KUTM/Support:/var/kutm/support
+    restart: unless-stopped
+
+  pgadmin:
+    image: dpage/pgadmin4:8
+    container_name: kutm_pgadmin
+    profiles: ["dev"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_DEFAULT_EMAIL:-admin@example.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_DEFAULT_PASSWORD:-admin}
+    ports:
+      - "${PGADMIN_HOST_PORT:-5050}:80"
+    restart: unless-stopped
+
+volumes:
+  kutm_pgdata:
