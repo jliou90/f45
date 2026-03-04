@@ -66,3 +66,6 @@ backend/tools/patch*_queue_*.py
 Thumbs.db
 .vscode/
 .idea/
+
+# Personal/local transcripts
+chat logs*.txt
