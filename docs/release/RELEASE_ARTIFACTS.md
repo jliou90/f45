@@ -20,3 +20,5 @@ This repository ships a local-first appliance bundle for dealer install. The rel
 
 - v1 includes backup, backup verification, and diagnostics collection.
 - Restore is intentionally excluded from v1 and planned for v1.1.
+- For maturity-patch deployment sequencing (MFA, comms, procurement, scheduler, exports), see:
+  - `docs/release/MATURITY_ROLLOUT_CHECKLIST.md`

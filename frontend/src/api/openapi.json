@@ -312,11 +312,33 @@
             "title": "Scheduled Start",
             "type": "string"
           },
+          "service_advisor_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Advisor User Id"
+          },
           "status": {
             "default": "scheduled",
             "maxLength": 30,
             "title": "Status",
             "type": "string"
+          },
+          "technician_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technician User Id"
           },
           "vehicle_id": {
             "anyOf": [
@@ -375,9 +397,31 @@
             "title": "Scheduled Start",
             "type": "string"
           },
+          "service_advisor_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Advisor User Id"
+          },
           "status": {
             "title": "Status",
             "type": "string"
+          },
+          "technician_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technician User Id"
           },
           "tenant_id": {
             "title": "Tenant Id",
@@ -408,7 +452,9 @@
           "scheduled_start",
           "scheduled_end",
           "status",
-          "notes"
+          "notes",
+          "technician_user_id",
+          "service_advisor_user_id"
         ],
         "title": "AppointmentOut",
         "type": "object"
@@ -450,6 +496,17 @@
             ],
             "title": "Scheduled Start"
           },
+          "service_advisor_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Advisor User Id"
+          },
           "status": {
             "anyOf": [
               {
@@ -461,6 +518,17 @@
               }
             ],
             "title": "Status"
+          },
+          "technician_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technician User Id"
           },
           "vehicle_id": {
             "anyOf": [
@@ -507,6 +575,17 @@
             "title": "Scheduled Start",
             "type": "string"
           },
+          "service_advisor_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Service Advisor User Id"
+          },
           "status": {
             "anyOf": [
               {
@@ -518,6 +597,17 @@
               }
             ],
             "title": "Status"
+          },
+          "technician_user_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Technician User Id"
           },
           "vehicle_id": {
             "anyOf": [
@@ -3299,6 +3389,17 @@
             "title": "Email",
             "type": "string"
           },
+          "otp_code": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Otp Code"
+          },
           "password": {
             "title": "Password",
             "type": "string"
@@ -3322,6 +3423,62 @@
           "refresh_token"
         ],
         "title": "LogoutRequest",
+        "type": "object"
+      },
+      "MfaCodeIn": {
+        "properties": {
+          "otp_code": {
+            "maxLength": 8,
+            "minLength": 6,
+            "title": "Otp Code",
+            "type": "string"
+          }
+        },
+        "required": [
+          "otp_code"
+        ],
+        "title": "MfaCodeIn",
+        "type": "object"
+      },
+      "MfaEnrollStartOut": {
+        "properties": {
+          "mfa_enabled": {
+            "title": "Mfa Enabled",
+            "type": "boolean"
+          },
+          "otpauth_url": {
+            "title": "Otpauth Url",
+            "type": "string"
+          },
+          "secret": {
+            "title": "Secret",
+            "type": "string"
+          }
+        },
+        "required": [
+          "secret",
+          "otpauth_url",
+          "mfa_enabled"
+        ],
+        "title": "MfaEnrollStartOut",
+        "type": "object"
+      },
+      "MfaStatusOut": {
+        "properties": {
+          "mfa_enabled": {
+            "title": "Mfa Enabled",
+            "type": "boolean"
+          },
+          "ok": {
+            "title": "Ok",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "ok",
+          "mfa_enabled"
+        ],
+        "title": "MfaStatusOut",
         "type": "object"
       },
       "MyTenantOut": {
@@ -3366,6 +3523,339 @@
           "count"
         ],
         "title": "OpsLogsTailResponse",
+        "type": "object"
+      },
+      "OrderBatchCreate": {
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "required": [
+          "name"
+        ],
+        "title": "OrderBatchCreate",
+        "type": "object"
+      },
+      "OrderBatchLineOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "qty": {
+            "title": "Qty",
+            "type": "integer"
+          },
+          "supply_item_id": {
+            "title": "Supply Item Id",
+            "type": "string"
+          },
+          "supply_name": {
+            "title": "Supply Name",
+            "type": "string"
+          },
+          "supply_sku": {
+            "title": "Supply Sku",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "supply_item_id",
+          "supply_sku",
+          "supply_name",
+          "qty",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OrderBatchLineOut",
+        "type": "object"
+      },
+      "OrderBatchLineUpsert": {
+        "properties": {
+          "qty": {
+            "minimum": 1.0,
+            "title": "Qty",
+            "type": "integer"
+          },
+          "supply_item_id": {
+            "title": "Supply Item Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "supply_item_id",
+          "qty"
+        ],
+        "title": "OrderBatchLineUpsert",
+        "type": "object"
+      },
+      "OrderBatchOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "lines": {
+            "items": {
+              "$ref": "#/components/schemas/OrderBatchLineOut"
+            },
+            "title": "Lines",
+            "type": "array"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "status",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OrderBatchOut",
+        "type": "object"
+      },
+      "OrderBatchUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "status": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          }
+        },
+        "title": "OrderBatchUpdate",
+        "type": "object"
+      },
+      "OutboundCommunicationOut": {
+        "properties": {
+          "attachment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachment Id"
+          },
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "channel": {
+            "title": "Channel",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "created_by": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Created By"
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id"
+          },
+          "deal_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Deal Id"
+          },
+          "entity_id": {
+            "title": "Entity Id",
+            "type": "string"
+          },
+          "entity_type": {
+            "title": "Entity Type",
+            "type": "string"
+          },
+          "error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Error"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "metadata_json": {
+            "title": "Metadata Json",
+            "type": "object"
+          },
+          "provider_message_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Message Id"
+          },
+          "status": {
+            "title": "Status",
+            "type": "string"
+          },
+          "subject": {
+            "title": "Subject",
+            "type": "string"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "to_address": {
+            "title": "To Address",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "entity_type",
+          "entity_id",
+          "channel",
+          "to_address",
+          "subject",
+          "body",
+          "status",
+          "metadata_json",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "OutboundCommunicationOut",
         "type": "object"
       },
       "OutboxDrainResult": {
@@ -3639,6 +4129,46 @@
         "title": "PageResult[MyTenantOut]",
         "type": "object"
       },
+      "PageResult_OrderBatchOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OrderBatchOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ],
+        "title": "PageResult[OrderBatchOut]",
+        "type": "object"
+      },
+      "PageResult_OutboundCommunicationOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/OutboundCommunicationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ],
+        "title": "PageResult[OutboundCommunicationOut]",
+        "type": "object"
+      },
       "PageResult_PeriodOut_": {
         "properties": {
           "items": {
@@ -3677,6 +4207,46 @@
           "meta"
         ],
         "title": "PageResult[ROQueueItem]",
+        "type": "object"
+      },
+      "PageResult_SupplyItemOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/SupplyItemOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ],
+        "title": "PageResult[SupplyItemOut]",
+        "type": "object"
+      },
+      "PageResult_TechnicianAvailabilityOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/TechnicianAvailabilityOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ],
+        "title": "PageResult[TechnicianAvailabilityOut]",
         "type": "object"
       },
       "PageResult_VehicleOut_": {
@@ -4506,6 +5076,93 @@
         "title": "SeedYearResult",
         "type": "object"
       },
+      "SendCustomerEmailIn": {
+        "properties": {
+          "attachment_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Attachment Id"
+          },
+          "body": {
+            "minLength": 1,
+            "title": "Body",
+            "type": "string"
+          },
+          "subject": {
+            "maxLength": 500,
+            "minLength": 1,
+            "title": "Subject",
+            "type": "string"
+          },
+          "to_email": {
+            "format": "email",
+            "title": "To Email",
+            "type": "string"
+          }
+        },
+        "required": [
+          "to_email",
+          "subject",
+          "body"
+        ],
+        "title": "SendCustomerEmailIn",
+        "type": "object"
+      },
+      "SendLenderStipIn": {
+        "properties": {
+          "attachment_id": {
+            "title": "Attachment Id",
+            "type": "string"
+          },
+          "lender_email": {
+            "format": "email",
+            "title": "Lender Email",
+            "type": "string"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "stip_name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Stip Name",
+            "type": "string"
+          },
+          "subject": {
+            "anyOf": [
+              {
+                "maxLength": 500,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Subject"
+          }
+        },
+        "required": [
+          "lender_email",
+          "stip_name",
+          "attachment_id"
+        ],
+        "title": "SendLenderStipIn",
+        "type": "object"
+      },
       "SessionOut": {
         "properties": {
           "created_at": {
@@ -4673,6 +5330,252 @@
           "items"
         ],
         "title": "SessionsListOut",
+        "type": "object"
+      },
+      "SupplyItemCreate": {
+        "properties": {
+          "name": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name",
+            "type": "string"
+          },
+          "on_hand_qty": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "On Hand Qty",
+            "type": "integer"
+          },
+          "reorder_point": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Reorder Point",
+            "type": "integer"
+          },
+          "reorder_qty": {
+            "default": 0,
+            "minimum": 0.0,
+            "title": "Reorder Qty",
+            "type": "integer"
+          },
+          "sku": {
+            "maxLength": 80,
+            "minLength": 1,
+            "title": "Sku",
+            "type": "string"
+          },
+          "unit": {
+            "default": "each",
+            "maxLength": 20,
+            "minLength": 1,
+            "title": "Unit",
+            "type": "string"
+          },
+          "vendor": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor"
+          }
+        },
+        "required": [
+          "sku",
+          "name"
+        ],
+        "title": "SupplyItemCreate",
+        "type": "object"
+      },
+      "SupplyItemOut": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "low_stock": {
+            "title": "Low Stock",
+            "type": "boolean"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "on_hand_qty": {
+            "title": "On Hand Qty",
+            "type": "integer"
+          },
+          "reorder_point": {
+            "title": "Reorder Point",
+            "type": "integer"
+          },
+          "reorder_qty": {
+            "title": "Reorder Qty",
+            "type": "integer"
+          },
+          "sku": {
+            "title": "Sku",
+            "type": "string"
+          },
+          "unit": {
+            "title": "Unit",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "vendor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor"
+          }
+        },
+        "required": [
+          "id",
+          "sku",
+          "name",
+          "on_hand_qty",
+          "reorder_point",
+          "reorder_qty",
+          "unit",
+          "low_stock",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "SupplyItemOut",
+        "type": "object"
+      },
+      "SupplyItemUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "on_hand_qty": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "On Hand Qty"
+          },
+          "reorder_point": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reorder Point"
+          },
+          "reorder_qty": {
+            "anyOf": [
+              {
+                "minimum": 0.0,
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reorder Qty"
+          },
+          "unit": {
+            "anyOf": [
+              {
+                "maxLength": 20,
+                "minLength": 1,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Unit"
+          },
+          "vendor": {
+            "anyOf": [
+              {
+                "maxLength": 255,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vendor"
+          }
+        },
+        "title": "SupplyItemUpdate",
+        "type": "object"
+      },
+      "TechnicianAvailabilityOut": {
+        "properties": {
+          "busy": {
+            "items": {
+              "additionalProperties": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "type": "object"
+            },
+            "title": "Busy",
+            "type": "array"
+          },
+          "email": {
+            "title": "Email",
+            "type": "string"
+          },
+          "user_id": {
+            "title": "User Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "user_id",
+          "email",
+          "busy"
+        ],
+        "title": "TechnicianAvailabilityOut",
         "type": "object"
       },
       "TenantCreate": {
@@ -9666,6 +10569,176 @@
         ]
       }
     },
+    "/api/v1/auth/mfa/disable": {
+      "post": {
+        "operationId": "mfa_disable_api_v1_auth_mfa_disable_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaCodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mfa Disable",
+        "tags": [
+          "auth",
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/mfa/enroll/start": {
+      "post": {
+        "operationId": "mfa_enroll_start_api_v1_auth_mfa_enroll_start_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaEnrollStartOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mfa Enroll Start",
+        "tags": [
+          "auth",
+          "auth"
+        ]
+      }
+    },
+    "/api/v1/auth/mfa/enroll/verify": {
+      "post": {
+        "operationId": "mfa_enroll_verify_api_v1_auth_mfa_enroll_verify_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MfaCodeIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MfaStatusOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mfa Enroll Verify",
+        "tags": [
+          "auth",
+          "auth"
+        ]
+      }
+    },
     "/api/v1/auth/refresh": {
       "post": {
         "operationId": "refresh_api_v1_auth_refresh_post",
@@ -9787,6 +10860,228 @@
         "tags": [
           "auth",
           "auth"
+        ]
+      }
+    },
+    "/api/v1/comms/customers/{customer_id}": {
+      "get": {
+        "operationId": "customer_messages_api_v1_comms_customers__customer_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customer_id",
+            "required": true,
+            "schema": {
+              "title": "Customer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Comma-separated sort fields, e.g. field,-field",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated sort fields, e.g. field,-field",
+              "title": "Sort"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResult_OutboundCommunicationOut_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Customer Messages",
+        "tags": [
+          "comms",
+          "comms"
+        ]
+      }
+    },
+    "/api/v1/comms/customers/{customer_id}/email": {
+      "post": {
+        "operationId": "customer_email_api_v1_comms_customers__customer_id__email_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customer_id",
+            "required": true,
+            "schema": {
+              "title": "Customer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendCustomerEmailIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutboundCommunicationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Customer Email",
+        "tags": [
+          "comms",
+          "comms"
+        ]
+      }
+    },
+    "/api/v1/comms/funding/{deal_id}/stip": {
+      "post": {
+        "operationId": "funding_stip_send_api_v1_comms_funding__deal_id__stip_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "deal_id",
+            "required": true,
+            "schema": {
+              "title": "Deal Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SendLenderStipIn"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OutboundCommunicationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Funding Stip Send",
+        "tags": [
+          "comms",
+          "comms"
         ]
       }
     },
@@ -10553,6 +11848,75 @@
           }
         },
         "summary": "Update Appointment",
+        "tags": [
+          "dms",
+          "dms"
+        ]
+      }
+    },
+    "/api/v1/dms/availability/technicians": {
+      "get": {
+        "operationId": "technician_availability_api_v1_dms_availability_technicians_get",
+        "parameters": [
+          {
+            "description": "YYYY-MM-DD",
+            "in": "query",
+            "name": "day",
+            "required": true,
+            "schema": {
+              "description": "YYYY-MM-DD",
+              "format": "date",
+              "title": "Day",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResult_TechnicianAvailabilityOut_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Technician Availability",
         "tags": [
           "dms",
           "dms"
@@ -13140,6 +14504,293 @@
         ]
       }
     },
+    "/api/v1/inventory/order-batches": {
+      "get": {
+        "operationId": "list_order_batches_api_v1_inventory_order_batches_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Comma-separated sort fields, e.g. field,-field",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated sort fields, e.g. field,-field",
+              "title": "Sort"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResult_OrderBatchOut_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Order Batches",
+        "tags": [
+          "inventory",
+          "inventory"
+        ]
+      },
+      "post": {
+        "operationId": "create_order_batch_api_v1_inventory_order_batches_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderBatchCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Order Batch",
+        "tags": [
+          "inventory",
+          "inventory"
+        ]
+      }
+    },
+    "/api/v1/inventory/order-batches/{batch_id}": {
+      "patch": {
+        "operationId": "update_order_batch_api_v1_inventory_order_batches__batch_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderBatchUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Order Batch",
+        "tags": [
+          "inventory",
+          "inventory"
+        ]
+      }
+    },
+    "/api/v1/inventory/order-batches/{batch_id}/lines": {
+      "put": {
+        "operationId": "upsert_order_batch_line_api_v1_inventory_order_batches__batch_id__lines_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "batch_id",
+            "required": true,
+            "schema": {
+              "title": "Batch Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderBatchLineUpsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrderBatchOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upsert Order Batch Line",
+        "tags": [
+          "inventory",
+          "inventory"
+        ]
+      }
+    },
     "/api/v1/inventory/queue": {
       "get": {
         "operationId": "queue_api_v1_inventory_queue_get",
@@ -13243,6 +14894,234 @@
           }
         },
         "summary": "Queue",
+        "tags": [
+          "inventory",
+          "inventory"
+        ]
+      }
+    },
+    "/api/v1/inventory/supplies": {
+      "get": {
+        "operationId": "list_supplies_api_v1_inventory_supplies_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "q",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          },
+          {
+            "in": "query",
+            "name": "low_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Low Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Comma-separated sort fields, e.g. field,-field",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated sort fields, e.g. field,-field",
+              "title": "Sort"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResult_SupplyItemOut_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Supplies",
+        "tags": [
+          "inventory",
+          "inventory"
+        ]
+      },
+      "post": {
+        "operationId": "create_supply_api_v1_inventory_supplies_post",
+        "parameters": [
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplyItemCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplyItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Supply",
+        "tags": [
+          "inventory",
+          "inventory"
+        ]
+      }
+    },
+    "/api/v1/inventory/supplies/{supply_id}": {
+      "patch": {
+        "operationId": "patch_supply_api_v1_inventory_supplies__supply_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "supply_id",
+            "required": true,
+            "schema": {
+              "title": "Supply Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplyItemUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SupplyItemOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Supply",
         "tags": [
           "inventory",
           "inventory"
@@ -13509,7 +15388,7 @@
             "required": false,
             "schema": {
               "default": "json",
-              "pattern": "^(json|csv|xml)$",
+              "pattern": "^(json|csv|xml|xlsx|pdf)$",
               "title": "Fmt",
               "type": "string"
             }
@@ -13523,6 +15402,29 @@
               "maximum": 20000,
               "minimum": 1,
               "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "orientation",
+            "required": false,
+            "schema": {
+              "default": "portrait",
+              "pattern": "^(portrait|landscape)$",
+              "title": "Orientation",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "scale",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 200,
+              "minimum": 50,
+              "title": "Scale",
               "type": "integer"
             }
           }

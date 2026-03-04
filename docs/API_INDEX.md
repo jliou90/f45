@@ -18,6 +18,9 @@ Source of truth is the running router graph in `backend/app/router/api.py` with 
 - `POST /api/v1/auth/login` -> `backend/app/modules/identity/api.py`
 - `POST /api/v1/auth/refresh` -> `backend/app/modules/identity/api.py`
 - `GET /api/v1/auth/me` -> `backend/app/modules/identity/api.py`
+- `POST /api/v1/auth/mfa/enroll/start` -> `backend/app/modules/identity/api.py`
+- `POST /api/v1/auth/mfa/enroll/verify` -> `backend/app/modules/identity/api.py`
+- `POST /api/v1/auth/mfa/disable` -> `backend/app/modules/identity/api.py`
 
 ## Tenancy
 - `POST /api/v1/tenants` -> `backend/app/modules/tenancy/api.py`
@@ -46,7 +49,13 @@ Source of truth is the running router graph in `backend/app/router/api.py` with 
 - `GET /api/v1/dms/appointments` -> `backend/app/modules/dms/api.py`
 - `GET /api/v1/dms/appointments/{appointment_id}` -> `backend/app/modules/dms/api.py`
 - `PUT|PATCH|DELETE /api/v1/dms/appointments/{appointment_id}` -> `backend/app/modules/dms/api.py`
+- `GET /api/v1/dms/availability/technicians` -> `backend/app/modules/dms/api.py`
 - `POST /api/v1/dms/comms/{conversation_id}/approval` -> `backend/app/modules/dms/api.py`
+
+## Comms
+- `POST /api/v1/comms/customers/{customer_id}/email` -> `backend/app/modules/comms/api.py`
+- `GET /api/v1/comms/customers/{customer_id}` -> `backend/app/modules/comms/api.py`
+- `POST /api/v1/comms/funding/{deal_id}/stip` -> `backend/app/modules/comms/api.py`
 
 ## Service RO
 - `POST /api/v1/service/ros` -> `backend/app/modules/service_ro/api.py`
@@ -84,6 +93,9 @@ Source of truth is the running router graph in `backend/app/router/api.py` with 
 - `POST /api/v1/integrations/outbox/drain` -> `backend/app/modules/integrations/api.py`
 - `GET /api/v1/io/export/{doc_type}` -> `backend/app/modules/io/api.py`
 - `POST /api/v1/io/import/{doc_type}` -> `backend/app/modules/io/api.py`
+- `POST|GET|PATCH /api/v1/inventory/supplies*` -> `backend/app/modules/inventory/api.py`
+- `POST|GET|PATCH /api/v1/inventory/order-batches*` -> `backend/app/modules/inventory/api.py`
+- `PUT /api/v1/inventory/order-batches/{batch_id}/lines` -> `backend/app/modules/inventory/api.py`
 - `GET /api/v1/selfheal/status` -> `backend/app/modules/selfheal/api.py`
 - `POST /api/v1/selfheal/rebuild/{doc_type}/{doc_id}` -> `backend/app/modules/selfheal/api.py`
 - `POST /api/v1/selfheal/rebuild_type/{doc_type}` -> `backend/app/modules/selfheal/api.py`

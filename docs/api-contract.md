@@ -9,6 +9,10 @@ Base URL prefix: `/api/v1`
   - `POST /api/v1/ops/bootstrap` (requires `X-Bootstrap-Token`)
   - `GET /healthz`
   - `GET /readyz`
+- MFA:
+  - `POST /api/v1/auth/mfa/enroll/start` returns `secret` + `otpauth_url`
+  - `POST /api/v1/auth/mfa/enroll/verify` enables MFA with `otp_code`
+  - Once enabled, `POST /api/v1/auth/login` requires `otp_code`
 - Authenticated endpoints require:
   - `Authorization: Bearer <access_token>`
 - Tenant-scoped endpoints require:
@@ -60,6 +64,12 @@ Paged endpoints return:
 
 ## Concurrency and ETags (DMS)
 DMS entity read endpoints return `ETag` based on version. Update/delete endpoints accept `If-Match` and enforce optimistic concurrency.
+
+## Exports
+- `GET /api/v1/io/export/{doc_type}` supports `fmt=json|csv|xml|xlsx|pdf`
+- PDF export accepts:
+  - `orientation=portrait|landscape`
+  - `scale=50..200`
 
 ## Contract Freeze Artifacts
 - OpenAPI snapshot (source for generated types): `frontend/src/api/openapi.json`
