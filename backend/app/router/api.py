@@ -24,6 +24,7 @@ from app.modules.io.api import router as io_router
 from app.modules.jobs.api import router as jobs_router
 from app.modules.ops.api import router as ops_router
 from app.modules.platform.routes import router as platform_router
+from app.modules.portal.api import router as portal_router
 from app.modules.rbac.api import router as rbac_router
 from app.modules.selfheal.api import router as selfheal_router
 from app.modules.service_ro.api import router as service_router
@@ -158,6 +159,7 @@ def build_api_router(*, api_prefix: str = "") -> APIRouter:
 
         # --- Platform (tenant-scoped / privileged) ---
         RouteMount(platform_router, tenant_required=True, tags=("platform",)),
+        RouteMount(portal_router, tenant_required=True, tags=("portal",)),
         RouteMount(admin_router, tenant_required=True, tags=("admin",)),
 
         # --- Backbone / tooling ---

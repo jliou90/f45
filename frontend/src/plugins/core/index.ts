@@ -1,4 +1,6 @@
 import { scaffoldPlugins } from "../../modules/scaffold/plugins";
+import { customersPlugin } from "../../modules/customers/plugin";
+import { actionCenterPlugin } from "../../modules/action-center/plugin";
 import type { ModulePlugin } from "../types";
 import { adminPlugin } from "./admin.plugin";
 import { commsOutboundPlugin } from "./comms-outbound.plugin";
@@ -13,6 +15,7 @@ import { tenantsPlugin } from "./tenants.plugin";
 
 export const corePlugins: ModulePlugin[] = [
   launcherPlugin,
+  actionCenterPlugin,
   adminPlugin,
   settingsPlugin,
   opsPlugin,
@@ -21,6 +24,7 @@ export const corePlugins: ModulePlugin[] = [
   procurementPlugin,
   tenantsPlugin,
   dmsHomePlugin,
+  customersPlugin,
   ...scaffoldPlugins,
   devContractsPlugin,
 ];

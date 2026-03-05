@@ -1226,6 +1226,66 @@
         "title": "CommsApprovalOut",
         "type": "object"
       },
+      "CommunicationChannel": {
+        "enum": [
+          "phone",
+          "email",
+          "sms",
+          "in_person",
+          "other"
+        ],
+        "title": "CommunicationChannel",
+        "type": "string"
+      },
+      "CommunicationDirection": {
+        "enum": [
+          "inbound",
+          "outbound"
+        ],
+        "title": "CommunicationDirection",
+        "type": "string"
+      },
+      "CustomerCommunication": {
+        "properties": {
+          "channel": {
+            "$ref": "#/components/schemas/CommunicationChannel"
+          },
+          "direction": {
+            "$ref": "#/components/schemas/CommunicationDirection"
+          },
+          "happened_at": {
+            "format": "date-time",
+            "title": "Happened At",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "subject": {
+            "default": "",
+            "maxLength": 255,
+            "title": "Subject",
+            "type": "string"
+          },
+          "summary": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Summary",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "channel",
+          "direction",
+          "happened_at"
+        ],
+        "title": "CustomerCommunication",
+        "type": "object"
+      },
       "CustomerCreate": {
         "properties": {
           "address1": {
@@ -1331,6 +1391,269 @@
           "last_name"
         ],
         "title": "CustomerCreate",
+        "type": "object"
+      },
+      "CustomerCrmProfileOut": {
+        "properties": {
+          "communications": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerCommunication"
+            },
+            "title": "Communications",
+            "type": "array"
+          },
+          "customer_id": {
+            "title": "Customer Id",
+            "type": "string"
+          },
+          "dms_customer_id": {
+            "title": "Dms Customer Id",
+            "type": "string"
+          },
+          "emails": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerEmail"
+            },
+            "title": "Emails",
+            "type": "array"
+          },
+          "garage": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerGarageVehicle"
+            },
+            "title": "Garage",
+            "type": "array"
+          },
+          "household": {
+            "$ref": "#/components/schemas/CustomerHousehold"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerNote"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "phones": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerPhone"
+            },
+            "title": "Phones",
+            "type": "array"
+          },
+          "spouse": {
+            "$ref": "#/components/schemas/CustomerSpouse"
+          },
+          "tenant_id": {
+            "title": "Tenant Id",
+            "type": "string"
+          },
+          "version": {
+            "title": "Version",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "id",
+          "tenant_id",
+          "customer_id",
+          "version",
+          "dms_customer_id",
+          "spouse",
+          "household",
+          "phones",
+          "emails",
+          "garage",
+          "notes",
+          "communications"
+        ],
+        "title": "CustomerCrmProfileOut",
+        "type": "object"
+      },
+      "CustomerCrmProfileUpsert": {
+        "properties": {
+          "communications": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerCommunication"
+            },
+            "title": "Communications",
+            "type": "array"
+          },
+          "dms_customer_id": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Dms Customer Id",
+            "type": "string"
+          },
+          "emails": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerEmail"
+            },
+            "title": "Emails",
+            "type": "array"
+          },
+          "garage": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerGarageVehicle"
+            },
+            "title": "Garage",
+            "type": "array"
+          },
+          "household": {
+            "$ref": "#/components/schemas/CustomerHousehold"
+          },
+          "notes": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerNote"
+            },
+            "title": "Notes",
+            "type": "array"
+          },
+          "phones": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerPhone"
+            },
+            "title": "Phones",
+            "type": "array"
+          },
+          "spouse": {
+            "$ref": "#/components/schemas/CustomerSpouse"
+          }
+        },
+        "title": "CustomerCrmProfileUpsert",
+        "type": "object"
+      },
+      "CustomerEmail": {
+        "properties": {
+          "email": {
+            "default": "",
+            "maxLength": 255,
+            "title": "Email",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Label",
+            "type": "string"
+          },
+          "primary": {
+            "default": false,
+            "title": "Primary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "CustomerEmail",
+        "type": "object"
+      },
+      "CustomerGarageVehicle": {
+        "properties": {
+          "id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "make": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Make",
+            "type": "string"
+          },
+          "model": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Model",
+            "type": "string"
+          },
+          "nickname": {
+            "default": "",
+            "maxLength": 120,
+            "title": "Nickname",
+            "type": "string"
+          },
+          "vin": {
+            "default": "",
+            "maxLength": 32,
+            "title": "Vin",
+            "type": "string"
+          },
+          "year": {
+            "default": "",
+            "maxLength": 10,
+            "title": "Year",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "CustomerGarageVehicle",
+        "type": "object"
+      },
+      "CustomerHousehold": {
+        "properties": {
+          "household_id": {
+            "default": "",
+            "maxLength": 64,
+            "title": "Household Id",
+            "type": "string"
+          },
+          "linked_customer_ids": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Linked Customer Ids",
+            "type": "array"
+          },
+          "relationship": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Relationship",
+            "type": "string"
+          }
+        },
+        "title": "CustomerHousehold",
+        "type": "object"
+      },
+      "CustomerNote": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "text": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Text",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "created_at"
+        ],
+        "title": "CustomerNote",
         "type": "object"
       },
       "CustomerOut": {
@@ -1563,6 +1886,74 @@
           }
         },
         "title": "CustomerPatch",
+        "type": "object"
+      },
+      "CustomerPhone": {
+        "properties": {
+          "id": {
+            "maxLength": 100,
+            "minLength": 1,
+            "title": "Id",
+            "type": "string"
+          },
+          "label": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Label",
+            "type": "string"
+          },
+          "number": {
+            "default": "",
+            "maxLength": 50,
+            "title": "Number",
+            "type": "string"
+          },
+          "primary": {
+            "default": false,
+            "title": "Primary",
+            "type": "boolean"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "CustomerPhone",
+        "type": "object"
+      },
+      "CustomerSpouse": {
+        "properties": {
+          "email": {
+            "default": "",
+            "maxLength": 255,
+            "title": "Email",
+            "type": "string"
+          },
+          "first_name": {
+            "default": "",
+            "maxLength": 100,
+            "title": "First Name",
+            "type": "string"
+          },
+          "last_name": {
+            "default": "",
+            "maxLength": 100,
+            "title": "Last Name",
+            "type": "string"
+          },
+          "notes": {
+            "default": "",
+            "maxLength": 5000,
+            "title": "Notes",
+            "type": "string"
+          },
+          "phone": {
+            "default": "",
+            "maxLength": 50,
+            "title": "Phone",
+            "type": "string"
+          }
+        },
+        "title": "CustomerSpouse",
         "type": "object"
       },
       "CustomerUpdate": {
@@ -3987,6 +4378,26 @@
           "meta"
         ],
         "title": "PageResult[AuditEventOut]",
+        "type": "object"
+      },
+      "PageResult_CustomerCrmProfileOut_": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CustomerCrmProfileOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "meta": {
+            "$ref": "#/components/schemas/PageMeta"
+          }
+        },
+        "required": [
+          "items",
+          "meta"
+        ],
+        "title": "PageResult[CustomerCrmProfileOut]",
         "type": "object"
       },
       "PageResult_CustomerOut_": {
@@ -12143,6 +12554,99 @@
         ]
       }
     },
+    "/api/v1/dms/customers-crm": {
+      "get": {
+        "operationId": "list_customer_crm_profiles_api_v1_dms_customers_crm_get",
+        "parameters": [
+          {
+            "description": "Optional filter by customer_id",
+            "in": "query",
+            "name": "customer_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional filter by customer_id",
+              "title": "Customer Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "page",
+            "required": false,
+            "schema": {
+              "default": 1,
+              "minimum": 1,
+              "title": "Page",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "size",
+            "required": false,
+            "schema": {
+              "default": 25,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Size",
+              "type": "integer"
+            }
+          },
+          {
+            "description": "Comma-separated sort fields, e.g. field,-field",
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Comma-separated sort fields, e.g. field,-field",
+              "title": "Sort"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PageResult_CustomerCrmProfileOut_"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Customer Crm Profiles",
+        "tags": [
+          "dms",
+          "dms"
+        ]
+      }
+    },
     "/api/v1/dms/customers/{customer_id}": {
       "delete": {
         "operationId": "delete_customer_api_v1_dms_customers__customer_id__delete",
@@ -12419,6 +12923,132 @@
           }
         },
         "summary": "Update Customer",
+        "tags": [
+          "dms",
+          "dms"
+        ]
+      }
+    },
+    "/api/v1/dms/customers/{customer_id}/crm": {
+      "get": {
+        "operationId": "get_customer_crm_profile_api_v1_dms_customers__customer_id__crm_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customer_id",
+            "required": true,
+            "schema": {
+              "title": "Customer Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerCrmProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Customer Crm Profile",
+        "tags": [
+          "dms",
+          "dms"
+        ]
+      },
+      "put": {
+        "operationId": "upsert_customer_crm_profile_api_v1_dms_customers__customer_id__crm_put",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "customer_id",
+            "required": true,
+            "schema": {
+              "title": "Customer Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "header",
+            "name": "If-Match",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "If-Match"
+            }
+          },
+          {
+            "in": "header",
+            "name": "Idempotency-Key",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Idempotency-Key"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CustomerCrmProfileUpsert"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CustomerCrmProfileOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Upsert Customer Crm Profile",
         "tags": [
           "dms",
           "dms"

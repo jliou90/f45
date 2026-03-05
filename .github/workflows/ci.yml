@@ -134,7 +134,9 @@ jobs:
           python tools/prove_constraints.py
 
       - name: Backend tests
-        run: python -m pytest -q tests -rs
+        run: |
+          python -m alembic upgrade head
+          python -m pytest -q tests -rs
 
       - name: Cross-stack E2E smoke (auth -> tenant -> write)
         run: python -m pytest -q tests/test_e2e_auth_tenant_write_smoke.py

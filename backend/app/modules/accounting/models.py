@@ -230,3 +230,54 @@ class AcctPostingBatch(Base):
     validated_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
     posted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)
     posted_by_user_id: Mapped[str | None] = mapped_column(String(36), nullable=True)
+
+
+class AcctWorkflowRecord(Base):
+    __tablename__ = "workflow_records"
+    __table_args__ = (
+        Index("ix_acct_wf_tenant_updated", "tenant_id", "updated_at"),
+        Index("ix_acct_wf_tenant_type_status", "tenant_id", "workflow_type", "status"),
+        {"schema": "acct"},
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    period_id: Mapped[str] = mapped_column(String(64), nullable=False, default="")
+    workflow_type: Mapped[str] = mapped_column(String(32), nullable=False)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    title: Mapped[str] = mapped_column(String(255), nullable=False)
+    reference_number: Mapped[str] = mapped_column(String(128), nullable=False)
+    effective_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    due_date: Mapped[date | None] = mapped_column(Date, nullable=True)
+    employee_id: Mapped[str] = mapped_column(String(128), nullable=False, default="")
+    counterparty: Mapped[str] = mapped_column(String(255), nullable=False, default="")
+    notes: Mapped[str] = mapped_column(String(2000), nullable=False, default="")
+    checklist: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    line_items: Mapped[list] = mapped_column(JSON, nullable=False, default=list)
+    tax_amount: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # cents
+    commission_rate_bps: Mapped[int] = mapped_column(Integer, nullable=False, default=0)  # basis points
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False, server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )
+
+
+class AcctOpsState(Base):
+    __tablename__ = "ops_state"
+    __table_args__ = (
+        UniqueConstraint("tenant_id", name="uq_acct_ops_state_tenant"),
+        {"schema": "acct"},
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), nullable=False, index=True)
+    state_json: Mapped[dict] = mapped_column(JSON, nullable=False, default=dict)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now(),
+    )

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from calendar import monthrange
-from datetime import date
+from datetime import date, datetime
 from typing import Any
 from typing import cast as type_cast
 from uuid import uuid4
@@ -24,8 +24,10 @@ from app.modules.accounting.models import (
     AcctAccount,
     AcctJournal,
     AcctJournalLine,
+    AcctOpsState,
     AcctPeriod,
     AcctPostingBatch,
+    AcctWorkflowRecord,
     PeriodStatus,
 )
 from app.modules.accounting.schemas import (
@@ -41,6 +43,10 @@ from app.modules.accounting.schemas import (
     JournalCreate,
     JournalLineOut,
     JournalOut,
+    OpsStateOut,
+    OpsStateUpdate,
+    OpsActionIn,
+    OpsActionOut,
     PeriodOut,
     PeriodReopenRequest,
     ProfitLossOut,
@@ -48,6 +54,8 @@ from app.modules.accounting.schemas import (
     SeedYearResult,
     TrialBalanceOut,
     TrialBalanceRow,
+    WorkflowRecordIn,
+    WorkflowRecordOut,
 )
 from app.modules.accounting.service import (
     create_batch,
@@ -869,3 +877,478 @@ def balance_sheet(
         equity_cents=equity,
         liabilities_plus_equity_cents=liabilities + equity,
     )
+
+
+def _safe_date(value: str | None) -> date | None:
+    if not value:
+        return None
+    try:
+        return date.fromisoformat(value)
+    except ValueError:
+        return None
+
+
+def _workflow_record_out(row: AcctWorkflowRecord) -> WorkflowRecordOut:
+    return WorkflowRecordOut(
+        id=row.id,
+        tenantId=row.tenant_id,
+        periodId=row.period_id or "",
+        workflowType=row.workflow_type,
+        status=row.status,
+        title=row.title,
+        referenceNumber=row.reference_number,
+        effectiveDate=row.effective_date.isoformat() if row.effective_date else "",
+        dueDate=row.due_date.isoformat() if row.due_date else "",
+        employeeId=row.employee_id or "",
+        counterparty=row.counterparty or "",
+        notes=row.notes or "",
+        checklist=row.checklist or [],
+        lineItems=row.line_items or [],
+        taxAmount=(row.tax_amount or 0) / 100.0,
+        commissionRate=(row.commission_rate_bps or 0) / 100.0,
+        createdAt=row.created_at.isoformat() if isinstance(row.created_at, datetime) else str(row.created_at),
+        updatedAt=row.updated_at.isoformat() if isinstance(row.updated_at, datetime) else str(row.updated_at),
+    )
+
+
+@router.get("/workflow-records", response_model=PageResult[WorkflowRecordOut])
+def list_workflow_records(
+    q: str | None = Query(default=None, description="Search by reference/title/notes"),
+    workflow_type: str | None = Query(default=None),
+    status: str | None = Query(default=None),
+    period_id: str | None = Query(default=None),
+    page: Page = Depends(page_params),
+    sort: Sort = Depends(sort_params),
+    db: Session = Depends(get_db),
+    _u=Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    _perm=Depends(require_permission(Permission.ACCOUNTING_READ)),
+) -> PageResult[WorkflowRecordOut]:
+    tid = tenant.id
+    qry = db.query(AcctWorkflowRecord).filter(AcctWorkflowRecord.tenant_id == tid)
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        qry = qry.filter(
+            (AcctWorkflowRecord.reference_number.ilike(like))
+            | (AcctWorkflowRecord.title.ilike(like))
+            | (AcctWorkflowRecord.notes.ilike(like))
+            | (AcctWorkflowRecord.counterparty.ilike(like))
+            | (AcctWorkflowRecord.employee_id.ilike(like))
+        )
+    if workflow_type and workflow_type.strip():
+        qry = qry.filter(AcctWorkflowRecord.workflow_type == workflow_type.strip())
+    if status and status.strip():
+        qry = qry.filter(AcctWorkflowRecord.status == status.strip())
+    if period_id and period_id.strip():
+        qry = qry.filter(AcctWorkflowRecord.period_id == period_id.strip())
+
+    if sort.fields:
+        qry = apply_sort(
+            qry,
+            AcctWorkflowRecord,
+            sort,
+            allowed={"workflow_type", "status", "title", "reference_number", "updated_at", "created_at"},
+        )
+    else:
+        qry = qry.order_by(AcctWorkflowRecord.updated_at.desc())
+
+    return paginate_query(qry, page=page, item_map=_workflow_record_out)
+
+
+@router.get("/workflow-records/{record_id}", response_model=WorkflowRecordOut)
+def get_workflow_record(
+    record_id: str,
+    db: Session = Depends(get_db),
+    _u=Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    _perm=Depends(require_permission(Permission.ACCOUNTING_READ)),
+) -> WorkflowRecordOut:
+    row = db.get(AcctWorkflowRecord, record_id)
+    if not row or row.tenant_id != tenant.id:
+        raise AppError(code="acct_workflow_record_not_found", message="Workflow record not found", status_code=404)
+    return _workflow_record_out(row)
+
+
+@router.post("/workflow-records", response_model=WorkflowRecordOut)
+def create_workflow_record(
+    payload: WorkflowRecordIn,
+    uow: UnitOfWork = Depends(get_uow),
+    _u=Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    _perm=Depends(require_permission(Permission.ACCOUNTING_WRITE)),
+    _idmp=Depends(idempotency_guard),
+) -> WorkflowRecordOut:
+    with uow as db:
+        row = AcctWorkflowRecord(
+            id=str(uuid4()),
+            tenant_id=tenant.id,
+            period_id=payload.periodId or "",
+            workflow_type=payload.workflowType,
+            status=payload.status,
+            title=payload.title,
+            reference_number=payload.referenceNumber,
+            effective_date=_safe_date(payload.effectiveDate),
+            due_date=_safe_date(payload.dueDate),
+            employee_id=payload.employeeId or "",
+            counterparty=payload.counterparty or "",
+            notes=payload.notes or "",
+            checklist=payload.checklist,
+            line_items=[item.model_dump(mode="json") for item in payload.lineItems],
+            tax_amount=int(round(payload.taxAmount * 100)),
+            commission_rate_bps=int(round(payload.commissionRate * 100)),
+        )
+        db.add(row)
+        db.flush()
+        db.refresh(row)
+        return _workflow_record_out(row)
+
+
+@router.put("/workflow-records/{record_id}", response_model=WorkflowRecordOut)
+def update_workflow_record(
+    record_id: str,
+    payload: WorkflowRecordIn,
+    uow: UnitOfWork = Depends(get_uow),
+    _u=Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    _perm=Depends(require_permission(Permission.ACCOUNTING_WRITE)),
+    _idmp=Depends(idempotency_guard),
+) -> WorkflowRecordOut:
+    with uow as db:
+        row = db.get(AcctWorkflowRecord, record_id)
+        if not row or row.tenant_id != tenant.id:
+            raise AppError(code="acct_workflow_record_not_found", message="Workflow record not found", status_code=404)
+        row.period_id = payload.periodId or ""
+        row.workflow_type = payload.workflowType
+        row.status = payload.status
+        row.title = payload.title
+        row.reference_number = payload.referenceNumber
+        row.effective_date = _safe_date(payload.effectiveDate)
+        row.due_date = _safe_date(payload.dueDate)
+        row.employee_id = payload.employeeId or ""
+        row.counterparty = payload.counterparty or ""
+        row.notes = payload.notes or ""
+        row.checklist = payload.checklist
+        row.line_items = [item.model_dump(mode="json") for item in payload.lineItems]
+        row.tax_amount = int(round(payload.taxAmount * 100))
+        row.commission_rate_bps = int(round(payload.commissionRate * 100))
+        db.flush()
+        db.refresh(row)
+        return _workflow_record_out(row)
+
+
+@router.delete("/workflow-records/{record_id}", response_model=dict[str, bool])
+def delete_workflow_record(
+    record_id: str,
+    uow: UnitOfWork = Depends(get_uow),
+    _u=Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    _perm=Depends(require_permission(Permission.ACCOUNTING_WRITE)),
+    _idmp=Depends(idempotency_guard),
+) -> dict[str, bool]:
+    with uow as db:
+        row = db.get(AcctWorkflowRecord, record_id)
+        if not row or row.tenant_id != tenant.id:
+            raise AppError(code="acct_workflow_record_not_found", message="Workflow record not found", status_code=404)
+        db.delete(row)
+        db.flush()
+        return {"ok": True}
+
+
+@router.get("/ops/state", response_model=OpsStateOut)
+def get_ops_state(
+    db: Session = Depends(get_db),
+    _u=Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    _perm=Depends(require_permission(Permission.ACCOUNTING_READ)),
+) -> OpsStateOut:
+    row = db.query(AcctOpsState).filter(AcctOpsState.tenant_id == tenant.id).one_or_none()
+    if not row:
+        return OpsStateOut(state={}, updated_at=None)
+    return OpsStateOut(state=row.state_json or {}, updated_at=row.updated_at)
+
+
+def _default_ops_state() -> dict[str, Any]:
+    return {
+        "periodControls": [],
+        "journals": [],
+        "vendorInvoices": [],
+        "receivables": [],
+        "dealFunding": [],
+        "roExceptions": [],
+        "commissions": [],
+        "taxFilings": [],
+        "reconciliations": [],
+        "assets": [],
+        "approvals": [],
+        "auditTrail": [],
+    }
+
+
+def _now_iso() -> str:
+    return datetime.now().astimezone().isoformat()
+
+
+def _new_id(prefix: str) -> str:
+    return f"{prefix}-{uuid4().hex[:12]}"
+
+
+def _ops_log(state: dict[str, Any], action: str, detail: str) -> None:
+    audit = state.setdefault("auditTrail", [])
+    if not isinstance(audit, list):
+        audit = []
+        state["auditTrail"] = audit
+    audit.insert(
+        0,
+        {
+            "id": _new_id("audit"),
+            "action": action,
+            "detail": detail,
+            "happenedAt": _now_iso(),
+        },
+    )
+    del audit[300:]
+
+
+def _find_by_id(rows: list[dict[str, Any]], row_id: str) -> dict[str, Any] | None:
+    for row in rows:
+        if str(row.get("id", "")) == row_id:
+            return row
+    return None
+
+
+def _apply_ops_action(state: dict[str, Any], action: str, payload: dict[str, Any]) -> None:
+    now = _now_iso()
+    if action == "period.close":
+        rows = state.setdefault("periodControls", [])
+        period_id = str(payload.get("periodId", ""))
+        existing = next((row for row in rows if str(row.get("periodId", "")) == period_id), None)
+        status = "hard_closed" if bool(payload.get("hardClose", False)) else "soft_closed"
+        next_row = {
+            "id": existing.get("id") if isinstance(existing, dict) else _new_id("period"),
+            "periodId": period_id,
+            "lockDate": str(payload.get("lockDate", "")),
+            "status": status,
+            "closeNotes": str(payload.get("closeNotes", "")),
+            "updatedAt": now,
+        }
+        if existing:
+            existing.update(next_row)
+        else:
+            rows.insert(0, next_row)
+        approvals = state.setdefault("approvals", [])
+        approvals.insert(0, {"id": _new_id("approval"), "area": "period_close", "entityId": period_id, "amount": 0, "requestedBy": "accounting_user", "status": "pending", "updatedAt": now})
+        _ops_log(state, action, f"{period_id} {status}")
+        return
+
+    if action == "period.reopen":
+        rows = state.setdefault("periodControls", [])
+        row = next((item for item in rows if str(item.get("periodId", "")) == str(payload.get("periodId", ""))), None)
+        if row:
+            row["status"] = "open"
+            row["updatedAt"] = now
+            _ops_log(state, action, str(payload.get("periodId", "")))
+        return
+
+    if action == "journal.create":
+        rows = state.setdefault("journals", [])
+        rows.insert(0, {"id": _new_id("jrnl"), "periodId": str(payload.get("periodId", "")), "memo": str(payload.get("memo", "")), "amount": float(payload.get("amount", 0) or 0), "entryDate": str(payload.get("entryDate", "")), "status": "draft", "updatedAt": now})
+        _ops_log(state, action, str(payload.get("memo", "")))
+        return
+
+    if action == "journal.status":
+        rows = state.setdefault("journals", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            row["status"] = str(payload.get("status", "draft"))
+            row["updatedAt"] = now
+            _ops_log(state, action, f"{row.get('id', '')} -> {row.get('status', '')}")
+        return
+
+    if action == "ap.invoice.create":
+        rows = state.setdefault("vendorInvoices", [])
+        rows.insert(0, {"id": _new_id("apinv"), "vendorName": str(payload.get("vendorName", "")), "invoiceNo": str(payload.get("invoiceNo", "")), "amount": float(payload.get("amount", 0) or 0), "dueDate": str(payload.get("dueDate", "")), "status": "open", "updatedAt": now})
+        _ops_log(state, action, str(payload.get("invoiceNo", "")))
+        return
+
+    if action == "ap.invoice.status":
+        rows = state.setdefault("vendorInvoices", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            row["status"] = str(payload.get("status", "open"))
+            row["updatedAt"] = now
+            _ops_log(state, action, f"{row.get('id', '')} -> {row.get('status', '')}")
+        return
+
+    if action == "ar.create":
+        rows = state.setdefault("receivables", [])
+        rows.insert(0, {"id": _new_id("ar"), "customerName": str(payload.get("customerName", "")), "amountDue": float(payload.get("amountDue", 0) or 0), "amountPaid": 0, "dueDate": str(payload.get("dueDate", "")), "status": "open", "updatedAt": now})
+        _ops_log(state, action, str(payload.get("customerName", "")))
+        return
+
+    if action == "ar.payment":
+        rows = state.setdefault("receivables", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            add = float(payload.get("amount", 0) or 0)
+            due = float(row.get("amountDue", 0) or 0)
+            paid = min(due, float(row.get("amountPaid", 0) or 0) + max(0, add))
+            row["amountPaid"] = paid
+            row["status"] = "paid" if paid >= due else "partial" if paid > 0 else "open"
+            row["updatedAt"] = now
+            _ops_log(state, action, f"{row.get('id', '')} +{add:.2f}")
+        return
+
+    if action == "deal.create":
+        rows = state.setdefault("dealFunding", [])
+        rows.insert(0, {"id": _new_id("deal"), "dealId": str(payload.get("dealId", "")), "customerName": str(payload.get("customerName", "")), "docsReceived": False, "stipsClear": False, "readyToFund": False, "updatedAt": now})
+        _ops_log(state, action, str(payload.get("dealId", "")))
+        return
+
+    if action == "deal.update":
+        rows = state.setdefault("dealFunding", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            row["docsReceived"] = bool(payload.get("docsReceived", row.get("docsReceived", False)))
+            row["stipsClear"] = bool(payload.get("stipsClear", row.get("stipsClear", False)))
+            row["readyToFund"] = bool(payload.get("readyToFund", row.get("readyToFund", False)))
+            row["updatedAt"] = now
+            _ops_log(state, action, str(row.get("id", "")))
+        return
+
+    if action == "ro.exception.create":
+        rows = state.setdefault("roExceptions", [])
+        rows.insert(0, {"id": _new_id("roex"), "roId": str(payload.get("roId", "")), "reason": str(payload.get("reason", "")), "amount": float(payload.get("amount", 0) or 0), "resolved": False, "updatedAt": now})
+        _ops_log(state, action, str(payload.get("roId", "")))
+        return
+
+    if action == "ro.exception.resolve":
+        rows = state.setdefault("roExceptions", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            row["resolved"] = True
+            row["updatedAt"] = now
+            _ops_log(state, action, str(row.get("id", "")))
+        return
+
+    if action == "commission.create":
+        rows = state.setdefault("commissions", [])
+        rows.insert(0, {"id": _new_id("comm"), "employeeId": str(payload.get("employeeId", "")), "employeeName": str(payload.get("employeeName", "")), "grossAmount": float(payload.get("grossAmount", 0) or 0), "commissionRate": float(payload.get("commissionRate", 0) or 0), "holdbackAmount": float(payload.get("holdbackAmount", 0) or 0), "status": "draft", "updatedAt": now})
+        _ops_log(state, action, str(payload.get("employeeId", "")))
+        return
+
+    if action == "commission.status":
+        rows = state.setdefault("commissions", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            row["status"] = str(payload.get("status", "draft"))
+            row["updatedAt"] = now
+            _ops_log(state, action, f"{row.get('id', '')} -> {row.get('status', '')}")
+        return
+
+    if action == "tax.create":
+        rows = state.setdefault("taxFilings", [])
+        rows.insert(0, {"id": _new_id("tax"), "jurisdiction": str(payload.get("jurisdiction", "")), "periodId": str(payload.get("periodId", "")), "taxableBase": float(payload.get("taxableBase", 0) or 0), "taxDue": float(payload.get("taxDue", 0) or 0), "dueDate": str(payload.get("dueDate", "")), "filedAt": "", "status": "draft", "updatedAt": now})
+        _ops_log(state, action, str(payload.get("jurisdiction", "")))
+        return
+
+    if action == "tax.status":
+        rows = state.setdefault("taxFilings", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            status = str(payload.get("status", "draft"))
+            row["status"] = status
+            if status == "filed":
+                row["filedAt"] = now[:10]
+            row["updatedAt"] = now
+            _ops_log(state, action, f"{row.get('id', '')} -> {status}")
+        return
+
+    if action == "recon.create":
+        rows = state.setdefault("reconciliations", [])
+        statement_balance = float(payload.get("statementBalance", 0) or 0)
+        book_balance = float(payload.get("bookBalance", 0) or 0)
+        difference = statement_balance - book_balance
+        rows.insert(0, {"id": _new_id("recon"), "accountName": str(payload.get("accountName", "")), "statementDate": str(payload.get("statementDate", "")), "statementBalance": statement_balance, "bookBalance": book_balance, "difference": difference, "status": "cleared" if abs(difference) < 0.005 else "open", "updatedAt": now})
+        _ops_log(state, action, str(payload.get("accountName", "")))
+        return
+
+    if action == "recon.clear":
+        rows = state.setdefault("reconciliations", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            row["difference"] = 0
+            row["status"] = "cleared"
+            row["updatedAt"] = now
+            _ops_log(state, action, str(row.get("id", "")))
+        return
+
+    if action == "asset.create":
+        rows = state.setdefault("assets", [])
+        rows.insert(0, {"id": _new_id("asset"), "assetTag": str(payload.get("assetTag", "")), "description": str(payload.get("description", "")), "cost": float(payload.get("cost", 0) or 0), "inServiceDate": str(payload.get("inServiceDate", "")), "usefulLifeMonths": int(payload.get("usefulLifeMonths", 0) or 0), "status": "active", "updatedAt": now})
+        _ops_log(state, action, str(payload.get("assetTag", "")))
+        return
+
+    if action == "asset.dispose":
+        rows = state.setdefault("assets", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            row["status"] = "disposed"
+            row["updatedAt"] = now
+            _ops_log(state, action, str(row.get("id", "")))
+        return
+
+    if action == "approval.status":
+        rows = state.setdefault("approvals", [])
+        row = _find_by_id(rows, str(payload.get("id", "")))
+        if row:
+            row["status"] = str(payload.get("status", "pending"))
+            row["updatedAt"] = now
+            _ops_log(state, action, f"{row.get('id', '')} -> {row.get('status', '')}")
+        return
+
+    raise AppError(code="acct_ops_action_invalid", message=f"Unsupported ops action: {action}", status_code=400)
+
+
+@router.put("/ops/state", response_model=OpsStateOut)
+def put_ops_state(
+    payload: OpsStateUpdate,
+    uow: UnitOfWork = Depends(get_uow),
+    _u=Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    _perm=Depends(require_permission(Permission.ACCOUNTING_WRITE)),
+    _idmp=Depends(idempotency_guard),
+) -> OpsStateOut:
+    with uow as db:
+        row = db.query(AcctOpsState).filter(AcctOpsState.tenant_id == tenant.id).one_or_none()
+        if row is None:
+            row = AcctOpsState(id=str(uuid4()), tenant_id=tenant.id, state_json=payload.state)
+            db.add(row)
+        else:
+            row.state_json = payload.state
+        db.flush()
+        db.refresh(row)
+        return OpsStateOut(state=row.state_json or {}, updated_at=row.updated_at)
+
+
+@router.post("/ops/actions", response_model=OpsActionOut)
+def post_ops_action(
+    payload: OpsActionIn,
+    uow: UnitOfWork = Depends(get_uow),
+    _u=Depends(get_current_user),
+    tenant: Tenant = Depends(get_current_tenant),
+    _perm=Depends(require_permission(Permission.ACCOUNTING_WRITE)),
+    _idmp=Depends(idempotency_guard),
+) -> OpsActionOut:
+    with uow as db:
+        row = db.query(AcctOpsState).filter(AcctOpsState.tenant_id == tenant.id).one_or_none()
+        if row is None:
+            state_json = _default_ops_state()
+            row = AcctOpsState(id=str(uuid4()), tenant_id=tenant.id, state_json=state_json)
+            db.add(row)
+        else:
+            state_json = row.state_json or _default_ops_state()
+        _apply_ops_action(state_json, payload.action, payload.payload or {})
+        row.state_json = state_json
+        db.flush()
+        db.refresh(row)
+        return OpsActionOut(state=row.state_json or {}, action=payload.action, updated_at=row.updated_at)

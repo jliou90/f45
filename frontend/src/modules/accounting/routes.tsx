@@ -1,9 +1,11 @@
 import { Route } from "react-router-dom";
 import { ProtectedRoute } from "../../components/ProtectedRoute";
+import { AccountingControlCenterPage } from "./pages/AccountingControlCenterPage";
 import { AccountingDetailPage } from "./pages/AccountingDetailPage";
 import { AccountingEditPage } from "./pages/AccountingEditPage";
 import { AccountingListPage } from "./pages/AccountingListPage";
 import { AccountingNewPage } from "./pages/AccountingNewPage";
+import { AccountingOpsInboxPage } from "./pages/AccountingOpsInboxPage";
 
 export function AccountingRoutes() {
   return (
@@ -25,7 +27,23 @@ export function AccountingRoutes() {
         }
       />
       <Route
-        path="/dms/accounting/:periodId"
+        path="/dms/accounting/control-center"
+        element={
+          <ProtectedRoute route="ACCOUNTING">
+            <AccountingControlCenterPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dms/accounting/inbox"
+        element={
+          <ProtectedRoute route="ACCOUNTING">
+            <AccountingOpsInboxPage />
+          </ProtectedRoute>
+        }
+      />
+      <Route
+        path="/dms/accounting/:recordId"
         element={
           <ProtectedRoute route="ACCOUNTING">
             <AccountingDetailPage />
@@ -33,7 +51,7 @@ export function AccountingRoutes() {
         }
       />
       <Route
-        path="/dms/accounting/:periodId/edit"
+        path="/dms/accounting/:recordId/edit"
         element={
           <ProtectedRoute route="ACCOUNTING">
             <AccountingEditPage />

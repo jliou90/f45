@@ -9,10 +9,11 @@ type Column<T> = {
 type DataTableProps<T> = {
   columns: Column<T>[];
   rows: T[];
+  rowKey?: (row: T, index: number) => string;
   emptyText?: string;
 };
 
-export function DataTable<T>({ columns, rows, emptyText = "No data" }: DataTableProps<T>) {
+export function DataTable<T>({ columns, rows, rowKey, emptyText = "No data" }: DataTableProps<T>) {
   return (
     <div className="tableWrap">
       <table className="dataTable">
@@ -25,7 +26,7 @@ export function DataTable<T>({ columns, rows, emptyText = "No data" }: DataTable
         </thead>
         <tbody>
           {rows.map((row, index) => (
-            <tr key={index}>
+            <tr key={rowKey ? rowKey(row, index) : String(index)}>
               {columns.map((column) => (
                 <td key={column.key}>{column.render(row)}</td>
               ))}

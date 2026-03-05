@@ -164,8 +164,10 @@ def _resolve_granted_permissions(
     role: str,
 ) -> set[str]:
     preset = getattr(request.state, "tenant_permissions", None)
-    if isinstance(preset, list | tuple | set) and preset:
-        return {str(p) for p in preset}
+    if isinstance(preset, (list, tuple, set)) and preset:
+        granted = {str(p).strip().lower() for p in preset if str(p).strip()}
+        granted.update(perm.value for perm in permissions_for_role(role))
+        return granted
     try:
         return _membership_permissions(
             db=db,

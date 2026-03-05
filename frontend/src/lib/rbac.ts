@@ -7,6 +7,7 @@ export type RoutePolicy =
   | "TENANTS"
   | "DMS"
   | "SALES"
+  | "CUSTOMERS"
   | "FI"
   | "SERVICE"
   | "PARTS"
@@ -24,6 +25,7 @@ const ACCESS_MATRIX: Record<RoutePolicy, UserRole[]> = {
   TENANTS: ["ADMIN", "MANAGER"],
   DMS: ["ADMIN", "MANAGER", "USER", "UNKNOWN"],
   SALES: ["ADMIN", "MANAGER", "USER", "UNKNOWN"],
+  CUSTOMERS: ["ADMIN", "MANAGER", "USER", "UNKNOWN"],
   FI: ["ADMIN", "MANAGER", "USER", "UNKNOWN"],
   SERVICE: ["ADMIN", "MANAGER", "USER", "UNKNOWN"],
   PARTS: ["ADMIN", "MANAGER", "USER", "UNKNOWN"],

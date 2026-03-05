@@ -4,6 +4,7 @@ from datetime import datetime
 
 from app.db.base import Base
 from sqlalchemy import (
+    JSON,
     Boolean,
     DateTime,
     ForeignKey,
@@ -156,3 +157,37 @@ class Appointment(Base, TimestampMixin, SoftDeleteMixin, VersionedMixin):
         nullable=True,
         index=True,
     )
+
+
+class CustomerCrmProfile(Base, TimestampMixin, VersionedMixin):
+    __tablename__ = "customer_crm_profiles"
+
+    __table_args__ = (
+        UniqueConstraint("tenant_id", "customer_id", name="uq_customer_crm_tenant_customer"),
+        Index("ix_customer_crm_tenant_customer", "tenant_id", "customer_id"),
+        Index("ix_customer_crm_tenant_updated", "tenant_id", "updated_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    tenant_id: Mapped[str] = mapped_column(String(36), ForeignKey("tenants.id"), index=True)
+    customer_id: Mapped[str] = mapped_column(String(36), ForeignKey("customers.id"), index=True)
+
+    dms_customer_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+
+    spouse_first_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    spouse_last_name: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    spouse_phone: Mapped[str | None] = mapped_column(String(30), nullable=True)
+    spouse_email: Mapped[str | None] = mapped_column(String(255), nullable=True)
+    spouse_notes: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+    household_id: Mapped[str | None] = mapped_column(String(64), nullable=True)
+    household_relationship: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    linked_customer_ids: Mapped[list[str]] = mapped_column(JSON, nullable=False, default=list)
+
+    phones: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    emails: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    garage: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    notes: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    communications: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    tasks: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)
+    attachments: Mapped[list[dict[str, object]]] = mapped_column(JSON, nullable=False, default=list)

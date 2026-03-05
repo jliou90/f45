@@ -14,7 +14,7 @@
     "lint": "eslint .",
     "format": "eslint . --fix",
     "preview": "vite preview",
-    "api:spec": "python ../backend/tools/export_openapi.py --out ./src/api/openapi.json",
+    "api:spec": "node ./tools/export-openapi-spec.mjs",
     "api:types": "openapi-typescript ./src/api/openapi.json -o ./src/api/types.ts",
     "api:generate": "npm run api:spec && npm run api:types",
     "check:api-base": "node ./tools/check-api-base.mjs",

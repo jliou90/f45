@@ -19,14 +19,17 @@ from app.core.uow import UnitOfWork
 from app.db.session import get_db, get_uow
 from app.modules.audit.service import log_audit_event
 from app.modules.dms.appointments_rules import check_vehicle_overlap, default_end, validate_times
-from app.modules.dms.models import Appointment, Customer, Vehicle
+from app.modules.dms.models import Appointment, Customer, CustomerCrmProfile, Vehicle
 from app.modules.dms.schemas import (
     AppointmentCreate,
     AppointmentOut,
     AppointmentPatch,
     AppointmentUpdate,
+    CustomerCrmProfileOut,
+    CustomerCrmProfileUpsert,
     CustomerCreate,
     CustomerOut,
+    CustomerSummaryOut,
     CustomerPatch,
     CustomerUpdate,
     VehicleCreate,
@@ -41,6 +44,7 @@ from app.modules.tenancy.models import Membership
 from app.modules.tenancy.deps import get_tenant_id
 from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from pydantic import BaseModel, Field
+from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 # Module router owns prefix for now (composition root currently supports this style).
@@ -159,6 +163,52 @@ def _apply_customer_search(qry, q: str | None):
     )
 
 
+def _string(v: object | None) -> str:
+    if isinstance(v, str):
+        return v
+    return ""
+
+
+def _array(v: object | None) -> list[dict[str, object]]:
+    if not isinstance(v, list):
+        return []
+    return [x for x in v if isinstance(x, dict)]
+
+
+def _primary_contact(items: list[dict[str, object]], *, value_key: str) -> str:
+    for item in items:
+        if bool(item.get("primary")):
+            return _string(item.get(value_key))
+    if items:
+        return _string(items[0].get(value_key))
+    return ""
+
+
+def _latest_communication_at(communications: list[dict[str, object]]) -> str:
+    times = [_string(item.get("happened_at")) for item in communications]
+    nonempty = [x for x in times if x]
+    return max(nonempty) if nonempty else ""
+
+
+def _customer_summary_out(customer: Customer, crm: CustomerCrmProfile | None) -> CustomerSummaryOut:
+    phones = _array(getattr(crm, "phones", None))
+    emails = _array(getattr(crm, "emails", None))
+    garage = _array(getattr(crm, "garage", None))
+    notes = _array(getattr(crm, "notes", None))
+    communications = _array(getattr(crm, "communications", None))
+    return CustomerSummaryOut(
+        id=customer.id,
+        dms_customer_id=_string(getattr(crm, "dms_customer_id", None)),
+        name=f"{customer.first_name} {customer.last_name}".strip(),
+        primary_phone=_primary_contact(phones, value_key="number") or _string(customer.phone),
+        primary_email=_primary_contact(emails, value_key="email") or _string(customer.email),
+        household_id=_string(getattr(crm, "household_id", None)),
+        garage_count=len(garage),
+        notes_count=len(notes),
+        last_communication_at=_latest_communication_at(communications),
+    )
+
+
 def _apply_vehicle_search(qry, q: str | None):
     if not q or not q.strip():
         return qry
@@ -203,6 +253,43 @@ def _get_vehicle(db: Session, tenant_id: str, vehicle_id: str) -> Vehicle:
     if not v:
         raise _not_found("Vehicle")
     return v
+
+
+def _get_customer_crm_profile(db: Session, tenant_id: str, customer_id: str) -> CustomerCrmProfile | None:
+    return (
+        tenant_scoped_query(db, CustomerCrmProfile, tenant_id=tenant_id)
+        .filter(CustomerCrmProfile.customer_id == customer_id)
+        .one_or_none()
+    )
+
+
+def _crm_payload_from_model(row: CustomerCrmProfile) -> CustomerCrmProfileOut:
+    return CustomerCrmProfileOut(
+        id=row.id,
+        tenant_id=row.tenant_id,
+        customer_id=row.customer_id,
+        version=row.version,
+        dms_customer_id=row.dms_customer_id or "",
+        spouse={
+            "first_name": row.spouse_first_name or "",
+            "last_name": row.spouse_last_name or "",
+            "phone": row.spouse_phone or "",
+            "email": row.spouse_email or "",
+            "notes": row.spouse_notes or "",
+        },
+        household={
+            "household_id": row.household_id or "",
+            "relationship": row.household_relationship or "",
+            "linked_customer_ids": row.linked_customer_ids or [],
+        },
+        phones=row.phones or [],
+        emails=row.emails or [],
+        garage=row.garage or [],
+        notes=row.notes or [],
+        communications=row.communications or [],
+        tasks=row.tasks or [],
+        attachments=row.attachments or [],
+    )
 
 
 def _get_appointment(db: Session, tenant_id: str, appointment_id: str) -> Appointment:
@@ -358,6 +445,62 @@ def list_customers(
     )
 
 
+@router.get("/customers/search", response_model=PageResult[CustomerSummaryOut])
+def search_customers(
+    q: str | None = Query(default=None, description="Search by customer + CRM fields"),
+    page: Page = Depends(page_params),
+    sort: Sort = Depends(sort_params),
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
+    _user=Depends(get_current_user),
+) -> PageResult[CustomerSummaryOut]:
+    join_condition = and_(
+        CustomerCrmProfile.customer_id == Customer.id,
+        CustomerCrmProfile.tenant_id == tenant_id,
+    )
+    qry = (
+        db.query(Customer, CustomerCrmProfile)
+        .select_from(Customer)
+        .outerjoin(CustomerCrmProfile, join_condition)
+        .filter(
+            Customer.tenant_id == tenant_id,
+            _not_deleted_filter(Customer),
+        )
+    )
+
+    if q and q.strip():
+        like = f"%{q.strip()}%"
+        qry = qry.filter(
+            (Customer.first_name.ilike(like))
+            | (Customer.last_name.ilike(like))
+            | (Customer.phone.ilike(like))
+            | (Customer.email.ilike(like))
+            | (CustomerCrmProfile.dms_customer_id.ilike(like))
+            | (CustomerCrmProfile.household_id.ilike(like))
+            | (CustomerCrmProfile.household_relationship.ilike(like))
+            | (CustomerCrmProfile.spouse_first_name.ilike(like))
+            | (CustomerCrmProfile.spouse_last_name.ilike(like))
+            | (CustomerCrmProfile.spouse_phone.ilike(like))
+            | (CustomerCrmProfile.spouse_email.ilike(like))
+        )
+
+    if sort.fields:
+        qry = apply_sort(
+            qry,
+            Customer,
+            sort,
+            allowed={"first_name", "last_name", "phone", "email", "created_at", "updated_at"},
+        )
+    else:
+        qry = qry.order_by(Customer.last_name.asc(), Customer.first_name.asc())
+
+    return paginate_query(
+        qry,
+        page=page,
+        item_map=lambda row: _customer_summary_out(row[0], row[1]),
+    )
+
+
 @router.put("/customers/{customer_id}", response_model=CustomerOut)
 def update_customer(
     request: Request,
@@ -374,11 +517,45 @@ def update_customer(
     with uow as db:
         c = _get_customer(db, tenant_id, customer_id)
         _require_match_or_allow("Customer", getattr(c, "version", 1), if_match)
+        before = {
+            "first_name": c.first_name,
+            "last_name": c.last_name,
+            "phone": c.phone,
+            "email": c.email,
+            "address1": c.address1,
+            "address2": c.address2,
+            "city": c.city,
+            "state": c.state,
+            "zip": c.zip,
+        }
 
         data = _safe_model_dump(payload)
         for k, v in data.items():
             setattr(c, k, v)
         _bump_version(c)
+        after = {
+            "first_name": c.first_name,
+            "last_name": c.last_name,
+            "phone": c.phone,
+            "email": c.email,
+            "address1": c.address1,
+            "address2": c.address2,
+            "city": c.city,
+            "state": c.state,
+            "zip": c.zip,
+        }
+        changed = sorted([k for k in after.keys() if before.get(k) != after.get(k)])
+        log_audit_event(
+            db=db,
+            tenant_id=tenant_id,
+            actor_id=getattr(_user, "id", None),
+            action="dms.customer.update",
+            entity_type="customer",
+            entity_id=c.id,
+            metadata={"changed_fields": changed},
+            before=before,
+            after=after,
+        )
 
         db.flush()
         _set_etag(response, _ensure_version(c))
@@ -435,6 +612,120 @@ def delete_customer(
         db.flush()
         _set_etag(response, _ensure_version(c))
         return CustomerOut.model_validate(c, from_attributes=True)
+
+
+# ---------------- Customer CRM profiles ----------------
+
+@router.get("/customers-crm", response_model=PageResult[CustomerCrmProfileOut])
+def list_customer_crm_profiles(
+    customer_id: str | None = Query(default=None, description="Optional filter by customer_id"),
+    page: Page = Depends(page_params),
+    sort: Sort = Depends(sort_params),
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
+    _user=Depends(get_current_user),
+) -> PageResult[CustomerCrmProfileOut]:
+    qry = tenant_scoped_query(db, CustomerCrmProfile, tenant_id=tenant_id)
+    if customer_id:
+        qry = qry.filter(CustomerCrmProfile.customer_id == customer_id)
+
+    if sort.fields:
+        qry = apply_sort(
+            qry,
+            CustomerCrmProfile,
+            sort,
+            allowed={"customer_id", "dms_customer_id", "created_at", "updated_at"},
+        )
+    else:
+        qry = qry.order_by(CustomerCrmProfile.updated_at.desc())
+
+    return paginate_query(
+        qry,
+        page=page,
+        item_map=_crm_payload_from_model,
+    )
+
+
+@router.get("/customers/{customer_id}/crm", response_model=CustomerCrmProfileOut)
+def get_customer_crm_profile(
+    customer_id: str,
+    response: Response,
+    db: Session = Depends(get_db),
+    tenant_id: str = Depends(get_tenant_id),
+    _user=Depends(get_current_user),
+) -> CustomerCrmProfileOut:
+    _get_customer(db, tenant_id, customer_id)
+    profile = _get_customer_crm_profile(db, tenant_id, customer_id)
+    if not profile:
+        raise _not_found("Customer CRM profile")
+    _set_etag(response, _ensure_version(profile))
+    return _crm_payload_from_model(profile)
+
+
+@router.put("/customers/{customer_id}/crm", response_model=CustomerCrmProfileOut)
+def upsert_customer_crm_profile(
+    request: Request,
+    response: Response,
+    customer_id: str,
+    payload: CustomerCrmProfileUpsert,
+    if_match: str | None = Header(default=None, alias="If-Match"),
+    _idmp=Depends(idempotency_guard),
+    uow: UnitOfWork = Depends(get_uow),
+    tenant_id: str = Depends(get_tenant_id),
+    _user=Depends(get_current_user),
+    _perm=Depends(require_permission(Permission.DMS_WRITE)),
+) -> CustomerCrmProfileOut:
+    with uow as db:
+        _get_customer(db, tenant_id, customer_id)
+        existing = _get_customer_crm_profile(db, tenant_id, customer_id)
+        before = _crm_payload_from_model(existing).model_dump(mode="json") if existing else None
+
+        if existing is None:
+            profile = CustomerCrmProfile(
+                id=str(uuid4()),
+                tenant_id=tenant_id,
+                customer_id=customer_id,
+            )
+            db.add(profile)
+            db.flush()
+        else:
+            profile = existing
+            _require_match_or_allow("Customer CRM profile", getattr(profile, "version", 1), if_match)
+            _bump_version(profile)
+
+        profile.dms_customer_id = payload.dms_customer_id or None
+        profile.spouse_first_name = payload.spouse.first_name or None
+        profile.spouse_last_name = payload.spouse.last_name or None
+        profile.spouse_phone = payload.spouse.phone or None
+        profile.spouse_email = payload.spouse.email or None
+        profile.spouse_notes = payload.spouse.notes or None
+        profile.household_id = payload.household.household_id or None
+        profile.household_relationship = payload.household.relationship or None
+        profile.linked_customer_ids = payload.household.linked_customer_ids
+        profile.phones = [x.model_dump(mode="json") for x in payload.phones]
+        profile.emails = [x.model_dump(mode="json") for x in payload.emails]
+        profile.garage = [x.model_dump(mode="json") for x in payload.garage]
+        profile.notes = [x.model_dump(mode="json") for x in payload.notes]
+        profile.communications = [x.model_dump(mode="json") for x in payload.communications]
+        profile.tasks = [x.model_dump(mode="json") for x in payload.tasks]
+        profile.attachments = [x.model_dump(mode="json") for x in payload.attachments]
+
+        db.flush()
+        after = _crm_payload_from_model(profile).model_dump(mode="json")
+        changed = sorted([k for k in after.keys() if k in {"dms_customer_id", "spouse", "household", "phones", "emails", "garage", "notes", "communications", "tasks", "attachments"} and (before or {}).get(k) != after.get(k)])
+        log_audit_event(
+            db=db,
+            tenant_id=tenant_id,
+            actor_id=getattr(_user, "id", None),
+            action="dms.customer.crm.upsert",
+            entity_type="customer",
+            entity_id=customer_id,
+            metadata={"changed_sections": changed},
+            before=before,
+            after=after,
+        )
+        _set_etag(response, _ensure_version(profile))
+        return _crm_payload_from_model(profile)
 
 
 # ---------------- Vehicles (Garage) ----------------

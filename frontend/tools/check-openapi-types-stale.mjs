@@ -1,10 +1,11 @@
-﻿import fs from "node:fs/promises";
+import fs from "node:fs/promises";
 import path from "node:path";
 import process from "node:process";
 import crypto from "node:crypto";
 
 const host = process.env.KUTM_HOSTNAME || "kutm.local";
 const sourceUrl = process.env.OPENAPI_URL || `https://${host}/openapi.json`;
+const sourceFile = process.env.OPENAPI_FILE || path.resolve("src/api/openapi.json");
 const generatedFile = path.resolve("src/gen/openapi.d.ts");
 
 let generated = "";
@@ -21,13 +22,31 @@ if (!hashMatch) {
   process.exit(0);
 }
 
-const current = await fetch(sourceUrl);
-if (!current.ok) {
-  console.warn(`WARN: Could not fetch ${sourceUrl} (HTTP ${current.status}).`);
-  process.exit(0);
+let currentText = "";
+if (!process.env.OPENAPI_URL) {
+  try {
+    currentText = await fs.readFile(sourceFile, "utf8");
+  } catch {
+    console.warn(`WARN: Could not read ${sourceFile}.`);
+    process.exit(0);
+  }
+} else {
+  try {
+    const current = await fetch(sourceUrl);
+    if (!current.ok) {
+      throw new Error(`HTTP ${current.status}`);
+    }
+    currentText = await current.text();
+  } catch {
+    try {
+      currentText = await fs.readFile(sourceFile, "utf8");
+    } catch {
+      console.warn(`WARN: Could not fetch ${sourceUrl} and could not read ${sourceFile}.`);
+      process.exit(0);
+    }
+  }
 }
 
-const currentText = await current.text();
 const currentHash = crypto.createHash("sha256").update(currentText).digest("hex");
 
 if (hashMatch[1] !== currentHash) {

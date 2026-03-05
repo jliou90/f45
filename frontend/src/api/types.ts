@@ -1057,6 +1057,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/dms/customers-crm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Customer Crm Profiles */
+        get: operations["list_customer_crm_profiles_api_v1_dms_customers_crm_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/dms/customers/{customer_id}": {
         parameters: {
             query?: never;
@@ -1075,6 +1092,24 @@ export interface paths {
         head?: never;
         /** Patch Customer */
         patch: operations["patch_customer_api_v1_dms_customers__customer_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/dms/customers/{customer_id}/crm": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Customer Crm Profile */
+        get: operations["get_customer_crm_profile_api_v1_dms_customers__customer_id__crm_get"];
+        /** Upsert Customer Crm Profile */
+        put: operations["upsert_customer_crm_profile_api_v1_dms_customers__customer_id__crm_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/dms/customers/{customer_id}/vehicles": {
@@ -2551,6 +2586,38 @@ export interface components {
             /** Request Id */
             request_id: string;
         };
+        /**
+         * CommunicationChannel
+         * @enum {string}
+         */
+        CommunicationChannel: "phone" | "email" | "sms" | "in_person" | "other";
+        /**
+         * CommunicationDirection
+         * @enum {string}
+         */
+        CommunicationDirection: "inbound" | "outbound";
+        /** CustomerCommunication */
+        CustomerCommunication: {
+            channel: components["schemas"]["CommunicationChannel"];
+            direction: components["schemas"]["CommunicationDirection"];
+            /**
+             * Happened At
+             * Format: date-time
+             */
+            happened_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Subject
+             * @default
+             */
+            subject: string;
+            /**
+             * Summary
+             * @default
+             */
+            summary: string;
+        };
         /** CustomerCreate */
         CustomerCreate: {
             /** Address1 */
@@ -2571,6 +2638,131 @@ export interface components {
             state?: string | null;
             /** Zip */
             zip?: string | null;
+        };
+        /** CustomerCrmProfileOut */
+        CustomerCrmProfileOut: {
+            /** Communications */
+            communications: components["schemas"]["CustomerCommunication"][];
+            /** Customer Id */
+            customer_id: string;
+            /** Dms Customer Id */
+            dms_customer_id: string;
+            /** Emails */
+            emails: components["schemas"]["CustomerEmail"][];
+            /** Garage */
+            garage: components["schemas"]["CustomerGarageVehicle"][];
+            household: components["schemas"]["CustomerHousehold"];
+            /** Id */
+            id: string;
+            /** Notes */
+            notes: components["schemas"]["CustomerNote"][];
+            /** Phones */
+            phones: components["schemas"]["CustomerPhone"][];
+            spouse: components["schemas"]["CustomerSpouse"];
+            /** Tenant Id */
+            tenant_id: string;
+            /** Version */
+            version: number;
+        };
+        /** CustomerCrmProfileUpsert */
+        CustomerCrmProfileUpsert: {
+            /** Communications */
+            communications?: components["schemas"]["CustomerCommunication"][];
+            /**
+             * Dms Customer Id
+             * @default
+             */
+            dms_customer_id: string;
+            /** Emails */
+            emails?: components["schemas"]["CustomerEmail"][];
+            /** Garage */
+            garage?: components["schemas"]["CustomerGarageVehicle"][];
+            household?: components["schemas"]["CustomerHousehold"];
+            /** Notes */
+            notes?: components["schemas"]["CustomerNote"][];
+            /** Phones */
+            phones?: components["schemas"]["CustomerPhone"][];
+            spouse?: components["schemas"]["CustomerSpouse"];
+        };
+        /** CustomerEmail */
+        CustomerEmail: {
+            /**
+             * Email
+             * @default
+             */
+            email: string;
+            /** Id */
+            id: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /**
+             * Primary
+             * @default false
+             */
+            primary: boolean;
+        };
+        /** CustomerGarageVehicle */
+        CustomerGarageVehicle: {
+            /** Id */
+            id: string;
+            /**
+             * Make
+             * @default
+             */
+            make: string;
+            /**
+             * Model
+             * @default
+             */
+            model: string;
+            /**
+             * Nickname
+             * @default
+             */
+            nickname: string;
+            /**
+             * Vin
+             * @default
+             */
+            vin: string;
+            /**
+             * Year
+             * @default
+             */
+            year: string;
+        };
+        /** CustomerHousehold */
+        CustomerHousehold: {
+            /**
+             * Household Id
+             * @default
+             */
+            household_id: string;
+            /** Linked Customer Ids */
+            linked_customer_ids?: string[];
+            /**
+             * Relationship
+             * @default
+             */
+            relationship: string;
+        };
+        /** CustomerNote */
+        CustomerNote: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Id */
+            id: string;
+            /**
+             * Text
+             * @default
+             */
+            text: string;
         };
         /** CustomerOut */
         CustomerOut: {
@@ -2619,6 +2811,54 @@ export interface components {
             state?: string | null;
             /** Zip */
             zip?: string | null;
+        };
+        /** CustomerPhone */
+        CustomerPhone: {
+            /** Id */
+            id: string;
+            /**
+             * Label
+             * @default
+             */
+            label: string;
+            /**
+             * Number
+             * @default
+             */
+            number: string;
+            /**
+             * Primary
+             * @default false
+             */
+            primary: boolean;
+        };
+        /** CustomerSpouse */
+        CustomerSpouse: {
+            /**
+             * Email
+             * @default
+             */
+            email: string;
+            /**
+             * First Name
+             * @default
+             */
+            first_name: string;
+            /**
+             * Last Name
+             * @default
+             */
+            last_name: string;
+            /**
+             * Notes
+             * @default
+             */
+            notes: string;
+            /**
+             * Phone
+             * @default
+             */
+            phone: string;
         };
         /** CustomerUpdate */
         CustomerUpdate: {
@@ -3443,6 +3683,12 @@ export interface components {
         PageResult_AuditEventOut_: {
             /** Items */
             items: components["schemas"]["app__modules__audit__schemas__AuditEventOut"][];
+            meta: components["schemas"]["PageMeta"];
+        };
+        /** PageResult[CustomerCrmProfileOut] */
+        PageResult_CustomerCrmProfileOut_: {
+            /** Items */
+            items: components["schemas"]["CustomerCrmProfileOut"][];
             meta: components["schemas"]["PageMeta"];
         };
         /** PageResult[CustomerOut] */
@@ -7000,6 +7246,42 @@ export interface operations {
             };
         };
     };
+    list_customer_crm_profiles_api_v1_dms_customers_crm_get: {
+        parameters: {
+            query?: {
+                /** @description Optional filter by customer_id */
+                customer_id?: string | null;
+                page?: number;
+                size?: number;
+                /** @description Comma-separated sort fields, e.g. field,-field */
+                sort?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PageResult_CustomerCrmProfileOut_"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_customer_api_v1_dms_customers__customer_id__get: {
         parameters: {
             query?: never;
@@ -7128,6 +7410,75 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CustomerOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_customer_crm_profile_api_v1_dms_customers__customer_id__crm_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerCrmProfileOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upsert_customer_crm_profile_api_v1_dms_customers__customer_id__crm_put: {
+        parameters: {
+            query?: never;
+            header?: {
+                "If-Match"?: string | null;
+                "Idempotency-Key"?: string | null;
+            };
+            path: {
+                customer_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CustomerCrmProfileUpsert"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CustomerCrmProfileOut"];
                 };
             };
             /** @description Validation Error */

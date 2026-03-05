@@ -210,3 +210,55 @@ class BalanceSheetOut(BaseModel):
     liabilities_cents: int
     equity_cents: int
     liabilities_plus_equity_cents: int
+
+
+class WorkflowLineItem(BaseModel):
+    id: str
+    label: str = ""
+    glCode: str = ""
+    quantity: float = 0
+    unitAmount: float = 0
+
+
+class WorkflowRecordIn(BaseModel):
+    periodId: str = ""
+    workflowType: str
+    status: str
+    title: str
+    referenceNumber: str
+    effectiveDate: str = ""
+    dueDate: str = ""
+    employeeId: str = ""
+    counterparty: str = ""
+    notes: str = ""
+    checklist: list[str] = Field(default_factory=list)
+    lineItems: list[WorkflowLineItem] = Field(default_factory=list)
+    taxAmount: float = 0
+    commissionRate: float = 0
+
+
+class WorkflowRecordOut(WorkflowRecordIn):
+    id: str
+    tenantId: str
+    createdAt: str
+    updatedAt: str
+
+
+class OpsStateOut(BaseModel):
+    state: dict
+    updated_at: datetime | None = None
+
+
+class OpsStateUpdate(BaseModel):
+    state: dict
+
+
+class OpsActionIn(BaseModel):
+    action: str
+    payload: dict = Field(default_factory=dict)
+
+
+class OpsActionOut(BaseModel):
+    state: dict
+    action: str
+    updated_at: datetime | None = None

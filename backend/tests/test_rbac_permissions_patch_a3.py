@@ -92,3 +92,24 @@ def test_permission_guard_allows_admin() -> None:
     assert r.status_code == 200
     body = r.json()
     assert set(body.keys()) == {"items", "meta"}
+
+
+def test_permission_guard_admin_merges_preset_permissions() -> None:
+    def _fake_user():
+        return SimpleNamespace(id="user-1")
+
+    def _fake_tenant_admin_with_preset(request: Request):
+        request.state.tenant_id = "tenant-1"
+        request.state.tenant_role = "ADMIN"
+        # Simulate middleware/session state carrying an incomplete permission set.
+        request.state.tenant_permissions = ["admin.users.read"]
+        return SimpleNamespace(id="tenant-1")
+
+    app.dependency_overrides[get_current_user] = _fake_user
+    app.dependency_overrides[get_current_tenant] = _fake_tenant_admin_with_preset
+    try:
+        r = client.get("/api/v1/dms/customers", headers={"X-Tenant-Id": "tenant-1"})
+    finally:
+        app.dependency_overrides.clear()
+
+    assert r.status_code == 200, r.text
