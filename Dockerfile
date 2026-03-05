@@ -9,6 +9,7 @@ COPY backend/requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
 COPY VERSION /app/VERSION
+COPY pytest.ini /app/backend/pytest.ini
 COPY backend /app/backend
 
 EXPOSE 8010

@@ -36,7 +36,7 @@
       LOGIN_LOCKOUT_MINUTES: ${LOGIN_LOCKOUT_MINUTES:-15}
       BOOTSTRAP_TOKEN: ${BOOTSTRAP_TOKEN:-}
       UVICORN_WORKERS: ${UVICORN_WORKERS:-4}
-      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,kutm.local}
+      TRUSTED_HOSTS: ${TRUSTED_HOSTS:-localhost,127.0.0.1,kutm.local,testserver}
       DB_HOST: postgres
       DB_PORT: 5432
       DB_NAME: ${POSTGRES_DB:-kutm}

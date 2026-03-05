@@ -83,6 +83,8 @@ def create_app() -> FastAPI:
         if env is AppEnv.TEST:
             default_trusted_hosts.append("testserver")
         trusted_hosts = _env_csv("TRUSTED_HOSTS", default_trusted_hosts)
+        if env is not AppEnv.PROD and "testserver" not in trusted_hosts:
+            trusted_hosts.append("testserver")
         app.add_middleware(TrustedHostMiddleware, allowed_hosts=trusted_hosts)
 
     # Audit log (best-effort)
